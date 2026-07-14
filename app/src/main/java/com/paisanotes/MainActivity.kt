@@ -3,45 +3,29 @@ package com.paisanotes
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.paisanotes.ui.theme.PaisaNotesTheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import com.paisanotes.presentation.transactions.TransactionsScreen
+import dagger.hilt.android.AndroidEntryPoint
 
+// 🚨 CRITICAL: Tells Hilt to inject dependencies into this Activity
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
         setContent {
-            PaisaNotesTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
+            // Apply standard Material 3 Theme (You can customize colors in ui/theme later)
+            MaterialTheme {
+                Surface {
+                    // Load our brand new screen!
+                    TransactionsScreen(
+                        onNavigateToAddTransaction = {
+                            // TODO: We will implement Type-Safe Navigation next!
+                        }
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    PaisaNotesTheme {
-        Greeting("Android")
     }
 }
