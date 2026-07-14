@@ -1,0 +1,20 @@
+package com.paisanotes.di
+
+import com.paisanotes.data.repository.TransactionRepositoryImpl
+import com.paisanotes.domain.repository.TransactionRepository
+import dagger.Binds
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class RepositoryModule {
+
+    // Note: Use @Binds for abstract classes/interfaces instead of @Provides.
+    // It is significantly more memory-efficient under the hood!
+    @Binds
+    abstract fun bindTransactionRepository(
+        transactionRepositoryImpl: TransactionRepositoryImpl
+    ): TransactionRepository
+}
