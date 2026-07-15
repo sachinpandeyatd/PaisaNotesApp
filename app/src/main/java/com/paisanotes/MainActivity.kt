@@ -1,10 +1,22 @@
 package com.paisanotes
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -21,51 +33,70 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    // Inject TokenManager to check login status before drawing UI
     @Inject
     lateinit var tokenManager: TokenManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Determine start destination
         val startScreen = if (tokenManager.getToken() != null) TransactionsRoute else LoginRoute
 
         setContent {
             MaterialTheme {
                 Surface {
-                    val navController = rememberNavController()
 
-                    NavHost(
-                        navController = navController,
-                        startDestination = startScreen // <--- THE AUTH GATE
-                    ) {
+                    // --- Local Network permission gate (Android 17 / SDK 37+) ---
+                    var permissionGranted by remember {
+                        mutableStateOf(
+                            if (Build.VERSION.SDK_INT >= 36) {
+                                ContextCompat.checkSelfPermission(
+                                    this, Manifest.permission.ACCESS_LOCAL_NETWORK
+                                ) == PackageManager.PERMISSION_GRANTED
+                            } else true // permission doesn't exist below API 36
+                        )
+                    }
 
-                        composable<LoginRoute> {
-                            LoginScreen(
-                                onLoginSuccess = {
-                                    // Pop the login screen off the backstack so user can't press 'Back' to return to it
+                    val launcher = rememberLauncherForActivityResult(
+                        ActivityResultContracts.RequestPermission()
+                    ) { granted -> permissionGranted = granted }
+
+                    LaunchedEffect(Unit) {
+                        if (Build.VERSION.SDK_INT >= 36 && !permissionGranted) {
+                            launcher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
+                        }
+                    }
+
+                    if (!permissionGranted && Build.VERSION.SDK_INT >= 36) {
+                        // Simple blocking screen until granted — replace with your own rationale UI
+                        Column(
+                            modifier = androidx.compose.ui.Modifier.fillMaxSize(),
+                            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                            verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+                        ) {
+                            Text("PaisaNotes needs local network access to sync with your server.")
+                            Spacer(modifier = androidx.compose.ui.Modifier.height(16.dp))
+                            Button(onClick = { launcher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK) }) {
+                                Text("Grant permission")
+                            }
+                        }
+                    } else {
+                        val navController = rememberNavController()
+                        NavHost(navController = navController, startDestination = startScreen) {
+                            composable<LoginRoute> {
+                                LoginScreen(onLoginSuccess = {
                                     navController.navigate(TransactionsRoute) {
                                         popUpTo(LoginRoute) { inclusive = true }
                                     }
-                                }
-                            )
-                        }
-
-                        composable<TransactionsRoute> {
-                            TransactionsScreen(
-                                onNavigateToAddTransaction = {
+                                })
+                            }
+                            composable<TransactionsRoute> {
+                                TransactionsScreen(onNavigateToAddTransaction = {
                                     navController.navigate(AddTransactionRoute())
-                                }
-                            )
-                        }
-
-                        composable<AddTransactionRoute> {
-                            AddTransactionScreen(
-                                onNavigateBack = {
-                                    navController.popBackStack()
-                                }
-                            )
+                                })
+                            }
+                            composable<AddTransactionRoute> {
+                                AddTransactionScreen(onNavigateBack = { navController.popBackStack() })
+                            }
                         }
                     }
                 }
