@@ -14,8 +14,8 @@ class PersonRepositoryImpl @Inject constructor(
 ) : PersonRepository {
 
     override fun getAllPeople(): Flow<List<Person>> {
-        return dao.getAllActivePeople().map { entities ->
-            entities.map { it.toDomainModel() }
+        return dao.getAllActivePeopleWithExposure().map { tuples ->
+            tuples.map { it.toDomainModel() }
         }
     }
 

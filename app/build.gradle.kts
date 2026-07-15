@@ -87,4 +87,6 @@ dependencies {
     ksp(libs.androidx.hilt.compiler)
 
     implementation(libs.androidx.compose.material.icons.extended)
+
+    implementation(libs.androidx.room.common)
 }

@@ -1,6 +1,7 @@
 package com.paisanotes.data.mapper
 
 import com.paisanotes.data.local.entity.PersonEntity
+import com.paisanotes.data.local.entity.PersonWithExposureTuple
 import com.paisanotes.data.local.entity.SyncStatus
 import com.paisanotes.domain.model.Person
 
@@ -26,5 +27,14 @@ fun Person.toEntity(
         updatedAt = updatedAt,
         isDeleted = isDeleted,
         syncStatus = syncStatus
+    )
+}
+
+fun PersonWithExposureTuple.toDomainModel(): Person {
+    return Person(
+        id = person.id,
+        name = person.name,
+        phoneNumber = person.phoneNumber,
+        totalExposure = totalExposure // Map the calculated SQL value!
     )
 }

@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.paisanotes.data.local.entity.PersonEntity
+import com.paisanotes.data.local.entity.PersonWithExposureTuple
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -27,4 +28,15 @@ interface PersonDao {
 
     @Query("UPDATE people SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
     suspend fun markAsSynced(ids: List<String>)
+
+    // This query sums up all active loans and proxy EMIs for each person dynamically!
+    @Query("""
+        SELECT p.*, 
+               (COALESCE((SELECT SUM(amountLent) FROM loans WHERE personId = p.id AND status = 'ACTIVE' AND isDeleted = 0), 0.0) +
+                COALESCE((SELECT SUM(principalAmount) FROM emis WHERE personId = p.id AND status = 'ACTIVE' AND isDeleted = 0), 0.0)) AS totalExposure
+        FROM people p
+        WHERE p.isDeleted = 0
+        ORDER BY p.name ASC
+    """)
+    fun getAllActivePeopleWithExposure(): Flow<List<PersonWithExposureTuple>>
 }

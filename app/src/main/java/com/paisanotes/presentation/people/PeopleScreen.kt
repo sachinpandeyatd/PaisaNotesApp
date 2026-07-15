@@ -20,6 +20,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.paisanotes.domain.model.Person
+import java.text.NumberFormat
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -111,7 +113,6 @@ fun PersonItemCard(person: Person, onClick: () -> Unit) {
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // A nice circular avatar placeholder
             Surface(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.primary,
@@ -124,17 +125,24 @@ fun PersonItemCard(person: Person, onClick: () -> Unit) {
                     modifier = Modifier.padding(12.dp)
                 )
             }
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             Column {
                 Text(text = person.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                
-                // We will hook this up to actual queries in the next step!
+
+                // 🚨 DYNAMIC CALCULATION FORMATTING
+                val formatter = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
+                val formattedExposure = formatter.format(person.totalExposure)
+
+                // If exposure is > 0, we highlight it in Red!
+                val exposureColor = if (person.totalExposure > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+
                 Text(
-                    text = "Total Exposure: ₹0.00", 
-                    style = MaterialTheme.typography.bodySmall, 
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "Total Exposure: $formattedExposure",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = exposureColor,
+                    fontWeight = if (person.totalExposure > 0) FontWeight.Bold else FontWeight.Normal
                 )
             }
         }
