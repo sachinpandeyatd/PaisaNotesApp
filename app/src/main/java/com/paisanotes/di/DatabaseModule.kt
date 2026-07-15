@@ -3,6 +3,9 @@ package com.paisanotes.di
 import android.content.Context
 import androidx.room.Room
 import com.paisanotes.data.local.PaisaDatabase
+import com.paisanotes.data.local.dao.EmiDao
+import com.paisanotes.data.local.dao.LoanDao
+import com.paisanotes.data.local.dao.PersonDao
 import com.paisanotes.data.local.dao.TransactionDao
 import dagger.Module
 import dagger.Provides
@@ -22,7 +25,7 @@ object DatabaseModule {
             context,
             PaisaDatabase::class.java,
             "paisanotes_db"
-        ).build()
+        ).fallbackToDestructiveMigration().build()
     }
 
     @Provides
@@ -30,4 +33,16 @@ object DatabaseModule {
     fun provideTransactionDao(database: PaisaDatabase): TransactionDao {
         return database.transactionDao
     }
+
+    @Provides
+    @Singleton
+    fun providePersonDao(database: PaisaDatabase): PersonDao = database.personDao
+
+    @Provides
+    @Singleton
+    fun provideEmiDao(database: PaisaDatabase): EmiDao = database.emiDao
+
+    @Provides
+    @Singleton
+    fun provideLoanDao(database: PaisaDatabase): LoanDao = database.loanDao
 }
