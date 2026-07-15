@@ -25,7 +25,9 @@ import com.paisanotes.presentation.add_transaction.AddTransactionScreen
 import com.paisanotes.presentation.auth.LoginScreen
 import com.paisanotes.presentation.navigation.AddTransactionRoute
 import com.paisanotes.presentation.navigation.LoginRoute
+import com.paisanotes.presentation.navigation.PeopleRoute
 import com.paisanotes.presentation.navigation.TransactionsRoute
+import com.paisanotes.presentation.people.PeopleScreen
 import com.paisanotes.presentation.transactions.TransactionsScreen
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -81,13 +83,13 @@ class MainActivity : ComponentActivity() {
                         }
                     } else {
                         val navController = rememberNavController()
-                        NavHost(navController = navController, startDestination = startScreen) {
-                            composable<LoginRoute> {
-                                LoginScreen(onLoginSuccess = {
-                                    navController.navigate(TransactionsRoute) {
-                                        popUpTo(LoginRoute) { inclusive = true }
+                        NavHost(navController = navController, startDestination = PeopleRoute) {
+                            composable<PeopleRoute> {
+                                PeopleScreen (
+                                    onNavigateToPersonDetail = { personId ->
+                                        // We will build the detail screen next!
                                     }
-                                })
+                                )
                             }
                             composable<TransactionsRoute> {
                                 TransactionsScreen(onNavigateToAddTransaction = {

@@ -7,6 +7,9 @@ import kotlinx.serialization.Serializable
 data object TransactionsRoute
 
 @Serializable
+data object PeopleRoute
+
+@Serializable
 data object LoginRoute
 
 // A data class because we might pass an ID later if we want to Edit a transaction!
