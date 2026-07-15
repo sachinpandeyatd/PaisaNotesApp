@@ -2,6 +2,7 @@ package com.paisanotes.presentation.person_detail
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,7 +18,10 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,9 +41,14 @@ import androidx.compose.ui.platform.LocalLocale
 @Composable
 fun PersonDetailScreen(
     viewModel: PersonDetailViewModel = hiltViewModel(),
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToAddLoan: (String) -> Unit,
+    onNavigateToAddEmi: (String) -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+
+    var showBottomSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
 
     // Pager State for Tabs
     val tabs = listOf("Loans", "Proxy EMIs")
@@ -63,7 +72,7 @@ fun PersonDetailScreen(
         },
         floatingActionButton = {
             // We will hook this up to Add Loan/EMI forms later!
-            FloatingActionButton(onClick = { /* TODO */ }) {
+            FloatingActionButton(onClick = { showBottomSheet = true }) {
                 Icon(Icons.Default.Add, contentDescription = "Add Loan or EMI")
             }
         }
@@ -120,6 +129,40 @@ fun PersonDetailScreen(
                     1 -> EmisList(emis = state.proxyEmis)
                 }
             }
+
+            if (showBottomSheet) {
+                ModalBottomSheet(
+                    onDismissRequest = { showBottomSheet = false },
+                    sheetState = sheetState
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("What do you want to add?", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(16.dp))
+
+                        ListItem(
+                            headlineContent = { Text("Lend Money (Loan)") },
+                            supportingContent = { Text("Simple cash loan given to this friend.") },
+                            modifier = Modifier.clickable {
+                                showBottomSheet = false
+                                // Trigger navigation to Loan Form
+                                state.person?.id?.let { onNavigateToAddLoan(it) }
+                            }
+                        )
+                        Divider()
+                        ListItem(
+                            headlineContent = { Text("Proxy EMI") },
+                            supportingContent = { Text("You bought something for them using your card.") },
+                            modifier = Modifier.clickable {
+                                showBottomSheet = false
+                                state.person?.id?.let { onNavigateToAddEmi(it) }
+                            }
+                        )
+                    }
+                }
+            }
+
         }
     }
 }

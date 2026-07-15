@@ -23,6 +23,12 @@ data class PersonDetailRoute(val personId: String)
 @Serializable
 data object PeopleRoute
 
+@Serializable
+data class AddLoanRoute(val personId: String)
+
+@Serializable
+data class AddEmiRoute(val personId: String)
+
 // --- NEW: Bottom Navigation Helper ---
 data class TopLevelRoute<T : Any>(
     val name: String,

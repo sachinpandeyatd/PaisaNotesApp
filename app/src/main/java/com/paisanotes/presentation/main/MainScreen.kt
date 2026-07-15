@@ -12,13 +12,16 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.paisanotes.presentation.add_emi.AddEmiScreen
+import com.paisanotes.presentation.add_loan.AddLoanScreen
 import com.paisanotes.presentation.add_transaction.AddTransactionScreen
 import com.paisanotes.presentation.auth.LoginScreen
+import com.paisanotes.presentation.navigation.AddEmiRoute
+import com.paisanotes.presentation.navigation.AddLoanRoute
 import com.paisanotes.presentation.navigation.AddTransactionRoute
 import com.paisanotes.presentation.navigation.LoginRoute
 import com.paisanotes.presentation.navigation.PeopleRoute
@@ -39,7 +42,9 @@ fun MainScreen(startDestination: Any) {
 
     // Hide BottomBar on Login and Add Transaction screens
     val hideBottomBar = currentDestination?.hasRoute(LoginRoute::class) == true ||
-            currentDestination?.hasRoute(AddTransactionRoute::class) == true
+            currentDestination?.hasRoute(AddTransactionRoute::class) == true ||
+            currentDestination?.hasRoute(AddLoanRoute::class) == true ||
+            currentDestination?.hasRoute(AddEmiRoute::class) == true
 
     Scaffold(
         bottomBar = {
@@ -112,10 +117,24 @@ fun MainScreen(startDestination: Any) {
             // 5. PERSON DETAIL SCREEN
             composable<PersonDetailRoute> {
                 PersonDetailScreen(
-                    onNavigateBack = {
-                        navController.popBackStack()
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToAddLoan = { personId ->
+                        navController.navigate(AddLoanRoute(personId))
+                    },
+                    onNavigateToAddEmi = { personId ->
+                        navController.navigate(AddEmiRoute(personId))
                     }
                 )
+            }
+
+            // 6. ADD LOAN
+            composable<AddLoanRoute> {
+                AddLoanScreen(onNavigateBack = { navController.popBackStack() })
+            }
+
+            // 7. ADD EMI
+            composable<AddEmiRoute> {
+                AddEmiScreen(onNavigateBack = { navController.popBackStack() })
             }
         }
     }
