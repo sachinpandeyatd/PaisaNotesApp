@@ -22,9 +22,11 @@ import com.paisanotes.presentation.auth.LoginScreen
 import com.paisanotes.presentation.navigation.AddTransactionRoute
 import com.paisanotes.presentation.navigation.LoginRoute
 import com.paisanotes.presentation.navigation.PeopleRoute
+import com.paisanotes.presentation.navigation.PersonDetailRoute
 import com.paisanotes.presentation.navigation.TransactionsRoute
 import com.paisanotes.presentation.navigation.bottomNavItems
 import com.paisanotes.presentation.people.PeopleScreen
+import com.paisanotes.presentation.person_detail.PersonDetailScreen
 import com.paisanotes.presentation.transactions.TransactionsScreen
 
 @Composable
@@ -96,7 +98,7 @@ fun MainScreen(startDestination: Any) {
             // 3. PEOPLE TAB
             composable<PeopleRoute> {
                 PeopleScreen(onNavigateToPersonDetail = { personId ->
-                    // We will add the PersonDetailRoute later!
+                    navController.navigate(PersonDetailRoute(personId = personId))
                 })
             }
 
@@ -105,6 +107,15 @@ fun MainScreen(startDestination: Any) {
                 AddTransactionScreen(onNavigateBack = {
                     navController.popBackStack()
                 })
+            }
+
+            // 5. PERSON DETAIL SCREEN
+            composable<PersonDetailRoute> {
+                PersonDetailScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
             }
         }
     }
