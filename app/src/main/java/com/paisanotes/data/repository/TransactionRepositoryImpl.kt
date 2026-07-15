@@ -1,5 +1,11 @@
 package com.paisanotes.data.repository
 
+import android.content.Context
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.paisanotes.data.local.dao.TransactionDao
 import com.paisanotes.data.local.entity.SyncStatus
 import com.paisanotes.data.mapper.toDomainModel
@@ -9,13 +15,16 @@ import com.paisanotes.data.remote.api.PaisaApiService
 import com.paisanotes.data.remote.dto.SyncPushRequest
 import com.paisanotes.domain.model.Transaction
 import com.paisanotes.domain.repository.TransactionRepository
+import com.paisanotes.worker.SyncWorker
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class TransactionRepositoryImpl @Inject constructor(
     private val dao: TransactionDao,
-    private val api: PaisaApiService
+    private val api: PaisaApiService,
+    @ApplicationContext private val context: Context
 ) : TransactionRepository {
 
     // 1. UI observes this. We use Kotlin's .map operator on the Flow to convert Entities to Domain Models!
@@ -40,6 +49,8 @@ class TransactionRepositoryImpl @Inject constructor(
         }
 
         dao.insertTransaction(entity) // Instantly saves locally. UI updates immediately.
+
+        triggerBackgroundSync()
     }
 
     // 3. Offline-First Soft Delete
@@ -51,6 +62,8 @@ class TransactionRepositoryImpl @Inject constructor(
             syncStatus = SyncStatus.PENDING_DELETE
         )
         dao.updateTransaction(deletedEntity)
+
+        triggerBackgroundSync()
     }
 
     // 4. THE SYNC ENGINE! (Pull -> Push)
@@ -86,5 +99,23 @@ class TransactionRepositoryImpl @Inject constructor(
             e.printStackTrace()
             false // Sync failed (e.g., no internet)
         }
+    }
+
+    // Helper method to enqueue work
+    private fun triggerBackgroundSync() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED) // Only run if internet is available
+            .build()
+
+        val syncWorkRequest = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setConstraints(constraints)
+            .build()
+
+        // REPLACE means if a sync is already running, cancel it and start a fresh one
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "paisa_sync_work",
+            ExistingWorkPolicy.REPLACE,
+            syncWorkRequest
+        )
     }
 }
