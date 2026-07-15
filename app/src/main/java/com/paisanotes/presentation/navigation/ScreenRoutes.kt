@@ -18,6 +18,9 @@ data object TransactionsRoute
 data class AddTransactionRoute(val transactionId: String? = null)
 
 @Serializable
+data class PersonDetailRoute(val personId: String)
+
+@Serializable
 data object PeopleRoute
 
 // --- NEW: Bottom Navigation Helper ---

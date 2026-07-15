@@ -1,9 +1,13 @@
 package com.paisanotes.di
 
 import com.paisanotes.data.repository.AuthRepositoryImpl
+import com.paisanotes.data.repository.EmiRepositoryImpl
+import com.paisanotes.data.repository.LoanRepositoryImpl
 import com.paisanotes.data.repository.PersonRepositoryImpl
 import com.paisanotes.data.repository.TransactionRepositoryImpl
 import com.paisanotes.domain.repository.AuthRepository
+import com.paisanotes.domain.repository.EmiRepository
+import com.paisanotes.domain.repository.LoanRepository
 import com.paisanotes.domain.repository.PersonRepository
 import com.paisanotes.domain.repository.TransactionRepository
 import dagger.Binds
@@ -31,4 +35,10 @@ abstract class RepositoryModule {
     abstract fun bindPersonRepository(
         personRepositoryImpl: PersonRepositoryImpl
     ): PersonRepository
+
+    @Binds
+    abstract fun bindLoanRepository(impl: LoanRepositoryImpl): LoanRepository
+
+    @Binds
+    abstract fun bindEmiRepository(impl: EmiRepositoryImpl): EmiRepository
 }
