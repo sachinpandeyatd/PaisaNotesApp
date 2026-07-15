@@ -1,6 +1,8 @@
 package com.paisanotes.di
 
+import com.paisanotes.data.repository.AuthRepositoryImpl
 import com.paisanotes.data.repository.TransactionRepositoryImpl
+import com.paisanotes.domain.repository.AuthRepository
 import com.paisanotes.domain.repository.TransactionRepository
 import dagger.Binds
 import dagger.Module
@@ -17,4 +19,9 @@ abstract class RepositoryModule {
     abstract fun bindTransactionRepository(
         transactionRepositoryImpl: TransactionRepositoryImpl
     ): TransactionRepository
+
+    @Binds
+    abstract fun bindAuthRepository(
+        authRepositoryImpl: AuthRepositoryImpl
+    ): AuthRepository
 }

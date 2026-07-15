@@ -20,7 +20,7 @@ object NetworkModule {
 
     // 1. Provide the Base URL of your Spring Boot server
     // For Android Emulator to access your local Spring Boot backend, use 10.0.2.2!
-    private const val BASE_URL = "http://10.0.2.2:8080/" 
+    private const val BASE_URL = "http://192.168.18.2:8080/"
 
     @Provides
     @Singleton

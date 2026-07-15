@@ -8,49 +8,65 @@ import androidx.compose.material3.Surface
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.paisanotes.data.local.TokenManager
 import com.paisanotes.presentation.add_transaction.AddTransactionScreen
+import com.paisanotes.presentation.auth.LoginScreen
 import com.paisanotes.presentation.navigation.AddTransactionRoute
+import com.paisanotes.presentation.navigation.LoginRoute
 import com.paisanotes.presentation.navigation.TransactionsRoute
 import com.paisanotes.presentation.transactions.TransactionsScreen
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    // Inject TokenManager to check login status before drawing UI
+    @Inject
+    lateinit var tokenManager: TokenManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Determine start destination
+        val startScreen = if (tokenManager.getToken() != null) TransactionsRoute else LoginRoute
 
         setContent {
             MaterialTheme {
                 Surface {
-                    // 1. Create the Navigation Controller
                     val navController = rememberNavController()
 
-                    // 2. Define the Navigation Graph
                     NavHost(
                         navController = navController,
-                        startDestination = TransactionsRoute // Start on the Transactions screen
+                        startDestination = startScreen // <--- THE AUTH GATE
                     ) {
 
-                        // Screen 1: Transactions List
+                        composable<LoginRoute> {
+                            LoginScreen(
+                                onLoginSuccess = {
+                                    // Pop the login screen off the backstack so user can't press 'Back' to return to it
+                                    navController.navigate(TransactionsRoute) {
+                                        popUpTo(LoginRoute) { inclusive = true }
+                                    }
+                                }
+                            )
+                        }
+
                         composable<TransactionsRoute> {
                             TransactionsScreen(
                                 onNavigateToAddTransaction = {
-                                    // When FAB is clicked, navigate to Add screen!
                                     navController.navigate(AddTransactionRoute())
                                 }
                             )
                         }
 
-                        // Screen 2: Add Transaction Form
                         composable<AddTransactionRoute> {
                             AddTransactionScreen(
                                 onNavigateBack = {
-                                    // When Saved or Back arrow is clicked, pop back to the list!
                                     navController.popBackStack()
                                 }
                             )
                         }
-
                     }
                 }
             }
