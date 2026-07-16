@@ -10,4 +10,6 @@ interface TransactionRepository {
     // UI calls these methods to save data locally
     suspend fun saveTransaction(transaction: Transaction)
     suspend fun deleteTransaction(transactionId: String)
+
+    suspend fun getTransactionById(id: String): Transaction?
 }

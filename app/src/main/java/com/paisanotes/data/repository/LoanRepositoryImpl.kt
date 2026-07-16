@@ -8,8 +8,10 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.paisanotes.data.local.dao.AuditLogDao
 import com.paisanotes.data.local.dao.LoanDao
+import com.paisanotes.data.local.dao.TransactionDao
 import com.paisanotes.data.local.entity.AuditLogEntity
 import com.paisanotes.data.local.entity.SyncStatus
+import com.paisanotes.data.local.entity.TransactionEntity
 import com.paisanotes.data.mapper.toDomainModel
 import com.paisanotes.data.mapper.toEntity
 import com.paisanotes.domain.model.Loan
@@ -18,11 +20,13 @@ import com.paisanotes.worker.SyncWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.util.UUID
 import javax.inject.Inject
 
 class LoanRepositoryImpl @Inject constructor(
     private val dao: LoanDao,
     private val auditLogDao: AuditLogDao,
+    private val transactionDao: TransactionDao,
     @ApplicationContext private val context: Context
 ) : LoanRepository {
 
@@ -51,6 +55,40 @@ class LoanRepositoryImpl @Inject constructor(
             metadata = metadataJson
         )
         auditLogDao.insertLog(auditLog)
+
+        triggerBackgroundSync()
+    }
+
+    override suspend fun recordRepayment(loanId: String, amount: Double) {
+        val entity = dao.getLoanById(loanId) ?: return
+
+        val newRepaid = entity.amountRepaid + amount
+        val status = if (newRepaid >= entity.amountLent) "CLOSED" else "ACTIVE"
+
+        // 1. Update Loan
+        dao.updateLoan(entity.copy(
+            amountRepaid = newRepaid,
+            status = status,
+            updatedAt = System.currentTimeMillis(),
+            syncStatus = SyncStatus.PENDING_UPDATE
+        ))
+
+        // 2. Add an INCOME transaction automatically
+        val txnId = UUID.randomUUID().toString()
+        transactionDao.insertTransaction(
+            TransactionEntity(
+                id = txnId, amount = amount, transactionType = "INCOME", merchant = null,
+                category = "Loan Repayment", transactionDate = System.currentTimeMillis(),
+                paymentMethod = "CASH", source = "LOAN_REPAYMENT", notes = "Repayment for Loan",
+                createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis(),
+                syncStatus = SyncStatus.PENDING_INSERT
+            )
+        )
+
+        // 3. Create Audit Logs
+        val logMetadata = """{"amountPaid": $amount, "newTotalRepaid": $newRepaid, "status": "$status"}"""
+        auditLogDao.insertLog(AuditLogEntity(entityType = "LOAN", entityId = loanId, actionType = "UPDATE", metadata = logMetadata))
+        auditLogDao.insertLog(AuditLogEntity(entityType = "TRANSACTION", entityId = txnId, actionType = "CREATE", metadata = """{"amount": $amount}"""))
 
         triggerBackgroundSync()
     }

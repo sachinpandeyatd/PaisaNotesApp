@@ -30,4 +30,7 @@ interface EmiDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEmis(emis: List<EmiEntity>)
+
+    @Query("SELECT * FROM emis WHERE id = :id")
+    suspend fun getEmiById(id: String): EmiEntity?
 }

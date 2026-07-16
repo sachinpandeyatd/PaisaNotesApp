@@ -125,8 +125,14 @@ fun PersonDetailScreen(
                 modifier = Modifier.fillMaxSize()
             ) { page ->
                 when (page) {
-                    0 -> LoansList(loans = state.loans)
-                    1 -> EmisList(emis = state.proxyEmis)
+                    0 -> LoansList(
+                        loans = state.loans,
+                        onRecordRepayment = viewModel::recordLoanRepayment //
+                    )
+                    1 -> EmisList(
+                        emis = state.proxyEmis,
+                        onRecordEmiPayment = viewModel::recordEmiPayment
+                    )
                 }
             }
 
@@ -210,7 +216,10 @@ fun ExposureHeader(totalExposure: Double, phone: String?) {
 }
 
 @Composable
-fun LoansList(loans: List<Loan>) {
+fun LoansList(loans: List<Loan>, onRecordRepayment: (String, Double) -> Unit) {
+    var selectedLoan by remember { mutableStateOf<Loan?>(null) }
+    var repaymentAmount by remember { mutableStateOf("") }
+
     if (loans.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("No active loans.")
@@ -219,15 +228,21 @@ fun LoansList(loans: List<Loan>) {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(loans, key = { it.id }) { loan ->
                 val formatter = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
+                val pending = loan.amountLent - loan.amountRepaid // Calculate pending amount
+
                 ListItem(
                     headlineContent = { Text(formatter.format(loan.amountLent), fontWeight = FontWeight.Bold) },
-                    supportingContent = {
-                        val sdf = SimpleDateFormat("dd MMM yyyy", LocalLocale.current.platformLocale)
-                        Text("Given on: ${sdf.format(Date(loan.dateGiven))}")
-                    },
+                    supportingContent = { Text("Pending: ${formatter.format(pending)}") },
                     trailingContent = {
-                        Badge(containerColor = if (loan.status == "ACTIVE") MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary) {
-                            Text(loan.status)
+                        if (loan.status == "ACTIVE") {
+                            Button(
+                                onClick = { selectedLoan = loan },
+                                contentPadding = PaddingValues(horizontal = 8.dp)
+                            ) {
+                                Text("Pay")
+                            }
+                        } else {
+                            Badge(containerColor = MaterialTheme.colorScheme.primary) { Text("CLOSED") }
                         }
                     },
                     colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest)
@@ -235,10 +250,40 @@ fun LoansList(loans: List<Loan>) {
             }
         }
     }
+
+    // Modal Dialog for Partial Loan Payment
+    if (selectedLoan != null) {
+        AlertDialog(
+            onDismissRequest = { selectedLoan = null },
+            title = { Text("Record Repayment") },
+            text = {
+                OutlinedTextField(
+                    value = repaymentAmount,
+                    onValueChange = { repaymentAmount = it },
+                    label = { Text("Amount Received") },
+                    prefix = { Text("₹") },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val amt = repaymentAmount.toDoubleOrNull()
+                    if (amt != null && amt > 0) {
+                        onRecordRepayment(selectedLoan!!.id, amt)
+                        selectedLoan = null
+                        repaymentAmount = ""
+                    }
+                }) { Text("Confirm") }
+            },
+            dismissButton = {
+                TextButton(onClick = { selectedLoan = null }) { Text("Cancel") }
+            }
+        )
+    }
 }
 
 @Composable
-fun EmisList(emis: List<Emi>) {
+fun EmisList(emis: List<Emi>, onRecordEmiPayment: (String) -> Unit) {
     if (emis.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("No proxy EMIs linked to this person.")
@@ -247,11 +292,25 @@ fun EmisList(emis: List<Emi>) {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(emis, key = { it.id }) { emi ->
                 val formatter = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
+
                 ListItem(
                     headlineContent = { Text(emi.itemName, fontWeight = FontWeight.Bold) },
-                    supportingContent = { Text("${formatter.format(emi.monthlyEmiAmount)} / month") },
+                    supportingContent = {
+                        // Show Monthly Amount + Progress (e.g., Paid: 2/12)
+                        Text("${formatter.format(emi.monthlyEmiAmount)} / month  •  Paid: ${emi.completedMonths}/${emi.totalMonths}")
+                    },
                     trailingContent = {
-                        Text("${emi.totalMonths} Months", style = MaterialTheme.typography.labelMedium)
+                        if (emi.status == "ACTIVE") {
+                            // NO DIALOG NEEDED! Just click Pay and it records 1 month instantly.
+                            Button(
+                                onClick = { onRecordEmiPayment(emi.id) },
+                                contentPadding = PaddingValues(horizontal = 8.dp)
+                            ) {
+                                Text("Pay")
+                            }
+                        } else {
+                            Badge(containerColor = MaterialTheme.colorScheme.primary) { Text("CLOSED") }
+                        }
                     },
                     colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest)
                 )

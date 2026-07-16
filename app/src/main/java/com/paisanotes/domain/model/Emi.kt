@@ -9,6 +9,7 @@ data class Emi(
     val principalAmount: Double,
     val monthlyEmiAmount: Double,
     val totalMonths: Int,
+    val completedMonths: Int = 0,
     val startDate: Long,
     val status: String // ACTIVE, CLOSED
 )

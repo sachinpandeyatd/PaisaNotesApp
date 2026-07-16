@@ -1,5 +1,6 @@
 package com.paisanotes.presentation.transactions
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,16 +21,14 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.ui.platform.LocalLocale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionsScreen(
-    // Hilt automatically injects the ViewModel here!
     viewModel: TransactionViewModel = hiltViewModel(),
-    onNavigateToAddTransaction: () -> Unit // Navigation callback
+    onNavigateToAddTransaction: (String?) -> Unit // Navigation callback
 ) {
-    // Collect the state from the ViewModel. 
-    // Any change to `state` forces this Composable to instantly redraw!
     val state by viewModel.state.collectAsState()
 
     Scaffold(
@@ -48,7 +47,7 @@ fun TransactionsScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onNavigateToAddTransaction) {
+            FloatingActionButton(onClick = { onNavigateToAddTransaction(null) }) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = "Add Transaction")
             }
         }
@@ -75,7 +74,10 @@ fun TransactionsScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(state.transactions, key = { it.id }) { transaction ->
-                        TransactionItem(transaction = transaction)
+                        TransactionItem(
+                            transaction = transaction,
+                            onClick = { onNavigateToAddTransaction(transaction.id) }
+                        )
                     }
                 }
             }
@@ -84,7 +86,7 @@ fun TransactionsScreen(
 }
 
 @Composable
-fun TransactionItem(transaction: Transaction) {
+fun TransactionItem(transaction: Transaction, onClick: () -> Unit) {
     val isIncome = transaction.transactionType == "INCOME"
     val amountColor = if (isIncome) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
     
@@ -93,11 +95,11 @@ fun TransactionItem(transaction: Transaction) {
     val formattedAmount = formatter.format(transaction.amount)
     
     // Format Date
-    val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
+    val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a", LocalLocale.current.platformLocale)
     val formattedDate = sdf.format(Date(transaction.transactionDate))
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable{ onClick() },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Row(

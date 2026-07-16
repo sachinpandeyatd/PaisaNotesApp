@@ -27,4 +27,7 @@ interface LoanDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertLoans(loans: List<LoanEntity>)
+
+    @Query("SELECT * FROM loans WHERE id = :id")
+    suspend fun getLoanById(id: String): LoanEntity?
 }

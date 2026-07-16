@@ -76,4 +76,11 @@ class PersonDetailViewModel @Inject constructor(
             }
         }
     }
+
+    fun recordLoanRepayment(loanId: String, amount: Double) {
+        viewModelScope.launch { loanRepository.recordRepayment(loanId, amount) }
+    }
+    fun recordEmiPayment(emiId: String) {
+        viewModelScope.launch { emiRepository.recordEmiPayment(emiId) }
+    }
 }

@@ -1,9 +1,12 @@
 package com.paisanotes.presentation.add_transaction
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.toRoute
 import com.paisanotes.domain.model.Transaction
 import com.paisanotes.domain.repository.TransactionRepository
+import com.paisanotes.presentation.navigation.AddTransactionRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,17 +27,38 @@ data class AddTransactionState(
 
 @HiltViewModel
 class AddTransactionViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val repository: TransactionRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AddTransactionState())
     val state: StateFlow<AddTransactionState> = _state.asStateFlow()
+    private val transactionId: String? = savedStateHandle.toRoute<AddTransactionRoute>().transactionId
 
     // Update individual fields as the user types
     fun onAmountChange(value: String) { _state.update { it.copy(amount = value) } }
     fun onCategoryChange(value: String) { _state.update { it.copy(category = value) } }
     fun onNotesChange(value: String) { _state.update { it.copy(notes = value) } }
     fun onTypeChange(type: String) { _state.update { it.copy(transactionType = type) } }
+
+    init {
+        // If an ID was passed, we are EDITING! Load the data.
+        if (transactionId != null) {
+            viewModelScope.launch {
+                val existingTxn = repository.getTransactionById(transactionId) // You need to add this to TransactionRepository interface!
+                if (existingTxn != null) {
+                    _state.update {
+                        it.copy(
+                            amount = existingTxn.amount.toString(),
+                            category = existingTxn.category,
+                            transactionType = existingTxn.transactionType,
+                            notes = existingTxn.notes ?: ""
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     fun saveTransaction() {
         val currentState = _state.value
@@ -48,7 +72,7 @@ class AddTransactionViewModel @Inject constructor(
             _state.update { it.copy(isSaving = true) }
 
             val transaction = Transaction(
-                id = UUID.randomUUID().toString(), // Generate Offline ID
+                id = transactionId ?: UUID.randomUUID().toString(), // Generate Offline ID
                 amount = parsedAmount,
                 transactionType = currentState.transactionType,
                 merchant = null,

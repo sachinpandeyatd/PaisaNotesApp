@@ -21,7 +21,7 @@ import com.paisanotes.data.local.entity.TransactionEntity
         LoanEntity::class,
         AuditLogEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class PaisaDatabase : RoomDatabase() {

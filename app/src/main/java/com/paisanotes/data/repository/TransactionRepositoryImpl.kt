@@ -104,4 +104,9 @@ class TransactionRepositoryImpl @Inject constructor(
             syncWorkRequest
         )
     }
+
+    override suspend fun getTransactionById(id: String): Transaction? {
+        // Fetch from DAO and convert Entity to Domain Model
+        return dao.getTransactionById(id)?.toDomainModel()
+    }
 }

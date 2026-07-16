@@ -41,6 +41,7 @@ data class LoanDto(
     val expectedReturnDate: String?,
     val status: String,
     val notes: String?,
+    val amountRepaid: Double,
     val createdAt: String,
     val updatedAt: String,
     val isDeleted: Boolean
@@ -55,6 +56,7 @@ data class EmiDto(
     val principalAmount: Double,
     val monthlyEmiAmount: Double,
     val totalMonths: Int,
+    val completedMonths: Int,
     val startDate: String,
     val status: String,
     val createdAt: String,

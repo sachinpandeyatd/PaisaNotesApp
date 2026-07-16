@@ -95,9 +95,11 @@ fun MainScreen(startDestination: Any) {
 
             // 2. TRANSACTIONS TAB
             composable<TransactionsRoute> {
-                TransactionsScreen(onNavigateToAddTransaction = {
-                    navController.navigate(AddTransactionRoute())
-                })
+                TransactionsScreen(
+                    onNavigateToAddTransaction = { id ->
+                        navController.navigate(AddTransactionRoute(transactionId = id))
+                    }
+                )
             }
 
             // 3. PEOPLE TAB

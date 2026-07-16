@@ -15,9 +15,10 @@ data class EmiEntity(
     val principalAmount: Double,
     val monthlyEmiAmount: Double,
     val totalMonths: Int,
+    val completedMonths: Int = 0,
     val startDate: Long,
     val status: String = "ACTIVE", // "ACTIVE" or "CLOSED"
-    
+
     // Auditing & Sync
     val createdAt: Long,
     val updatedAt: Long,
