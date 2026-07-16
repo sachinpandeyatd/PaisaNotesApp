@@ -39,4 +39,7 @@ interface PersonDao {
         ORDER BY p.name ASC
     """)
     fun getAllActivePeopleWithExposure(): Flow<List<PersonWithExposureTuple>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPeople(people: List<PersonEntity>)
 }

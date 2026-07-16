@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.paisanotes.domain.repository.SyncRepository
 import com.paisanotes.domain.repository.TransactionRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -12,13 +13,13 @@ import dagger.assisted.AssistedInject
 class SyncWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
-    private val repository: TransactionRepository // Hilt injects this magically!
+    private val syncRepository: SyncRepository
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
         return try {
             // We call the exact same sync logic the manual Refresh button uses!
-            val success = repository.syncWithServer()
+            val success = syncRepository.syncWithServer()
 
             if (success) {
                 Result.success()

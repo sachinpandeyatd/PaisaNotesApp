@@ -21,4 +21,13 @@ interface EmiDao {
 
     @Update
     suspend fun updateEmi(emi: EmiEntity)
+
+    @Query("SELECT * FROM emis WHERE syncStatus != 'SYNCED'")
+    suspend fun getUnsyncedEmis(): List<EmiEntity>
+
+    @Query("UPDATE emis SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<String>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEmis(emis: List<EmiEntity>)
 }

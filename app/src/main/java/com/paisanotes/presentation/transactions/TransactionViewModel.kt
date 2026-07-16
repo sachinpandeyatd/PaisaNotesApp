@@ -2,6 +2,7 @@ package com.paisanotes.presentation.transactions
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.paisanotes.domain.repository.SyncRepository
 import com.paisanotes.domain.repository.TransactionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +16,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TransactionViewModel @Inject constructor(
-    private val repository: TransactionRepository
+    private val repository: TransactionRepository,
+    private val syncRepository: SyncRepository
 ) : ViewModel() {
 
     // Backing property (Mutable, private)
@@ -57,7 +59,7 @@ class TransactionViewModel @Inject constructor(
             TransactionUiEvent.ForceSync -> {
                 viewModelScope.launch {
                     _state.update { it.copy(isLoading = true) }
-                    repository.syncWithServer()
+                    syncRepository.syncWithServer()
                     _state.update { it.copy(isLoading = false) }
                 }
             }

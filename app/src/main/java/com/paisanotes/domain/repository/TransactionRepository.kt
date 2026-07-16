@@ -10,7 +10,4 @@ interface TransactionRepository {
     // UI calls these methods to save data locally
     suspend fun saveTransaction(transaction: Transaction)
     suspend fun deleteTransaction(transactionId: String)
-
-    // WorkManager calls this to perform background syncing
-    suspend fun syncWithServer(): Boolean
 }

@@ -18,4 +18,13 @@ interface LoanDao {
 
     @Update
     suspend fun updateLoan(loan: LoanEntity)
+
+    @Query("SELECT * FROM loans WHERE syncStatus != 'SYNCED'")
+    suspend fun getUnsyncedLoans(): List<LoanEntity>
+
+    @Query("UPDATE loans SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<String>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLoans(loans: List<LoanEntity>)
 }

@@ -4,11 +4,13 @@ import com.paisanotes.data.repository.AuthRepositoryImpl
 import com.paisanotes.data.repository.EmiRepositoryImpl
 import com.paisanotes.data.repository.LoanRepositoryImpl
 import com.paisanotes.data.repository.PersonRepositoryImpl
+import com.paisanotes.data.repository.SyncRepositoryImpl
 import com.paisanotes.data.repository.TransactionRepositoryImpl
 import com.paisanotes.domain.repository.AuthRepository
 import com.paisanotes.domain.repository.EmiRepository
 import com.paisanotes.domain.repository.LoanRepository
 import com.paisanotes.domain.repository.PersonRepository
+import com.paisanotes.domain.repository.SyncRepository
 import com.paisanotes.domain.repository.TransactionRepository
 import dagger.Binds
 import dagger.Module
@@ -41,4 +43,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindEmiRepository(impl: EmiRepositoryImpl): EmiRepository
+
+    @Binds
+    abstract fun bindSyncRepository(impl: SyncRepositoryImpl): SyncRepository
 }
