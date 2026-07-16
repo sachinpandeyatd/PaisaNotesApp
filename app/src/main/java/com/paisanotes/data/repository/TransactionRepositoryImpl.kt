@@ -6,7 +6,9 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.paisanotes.data.local.dao.AuditLogDao
 import com.paisanotes.data.local.dao.TransactionDao
+import com.paisanotes.data.local.entity.AuditLogEntity
 import com.paisanotes.data.local.entity.SyncStatus
 import com.paisanotes.data.mapper.toDomainModel
 import com.paisanotes.data.mapper.toEntity
@@ -20,6 +22,7 @@ import javax.inject.Inject
 
 class TransactionRepositoryImpl @Inject constructor(
     private val dao: TransactionDao,
+    private val auditLogDao: AuditLogDao,
     @ApplicationContext private val context: Context
 ) : TransactionRepository {
 
@@ -34,17 +37,29 @@ class TransactionRepositoryImpl @Inject constructor(
     override suspend fun saveTransaction(transaction: Transaction) {
         val existingEntity = dao.getTransactionById(transaction.id)
 
+        val actionType = if (existingEntity == null) "CREATE" else "UPDATE"
+
+        val metadataJson = """{"amount": ${transaction.amount}, "category": "${transaction.category}"}"""
+
         val entity = if (existingEntity == null) {
             transaction.toEntity(syncStatus = SyncStatus.PENDING_INSERT)
         } else {
             transaction.toEntity(
                 syncStatus = SyncStatus.PENDING_UPDATE,
                 createdAt = existingEntity.createdAt,
-                updatedAt = System.currentTimeMillis() // Update the timestamp!
+                updatedAt = System.currentTimeMillis()
             )
         }
 
-        dao.insertTransaction(entity) // Instantly saves locally. UI updates immediately.
+        dao.insertTransaction(entity)
+
+        val auditLog = AuditLogEntity(
+            entityType = "TRANSACTION",
+            entityId = transaction.id,
+            actionType = actionType,
+            metadata = metadataJson
+        )
+        auditLogDao.insertLog(auditLog)
 
         triggerBackgroundSync()
     }
@@ -58,6 +73,16 @@ class TransactionRepositoryImpl @Inject constructor(
             syncStatus = SyncStatus.PENDING_DELETE
         )
         dao.updateTransaction(deletedEntity)
+
+        val metadataJson = """{"amount": ${entity.amount}, "category": "${entity.category}"}"""
+
+        val auditLog = AuditLogEntity(
+            entityType = "TRANSACTION",
+            entityId = transactionId,
+            actionType = "DELETE",
+            metadata = metadataJson
+        )
+        auditLogDao.insertLog(auditLog)
 
         triggerBackgroundSync()
     }

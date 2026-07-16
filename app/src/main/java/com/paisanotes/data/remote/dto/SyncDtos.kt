@@ -20,7 +20,8 @@ data class SyncPullResponse(
     val transactions: List<TransactionDto>,
     val people: List<PersonDto>? = emptyList(),
     val loans: List<LoanDto>? = emptyList(),
-    val emis: List<EmiDto>? = emptyList()
+    val emis: List<EmiDto>? = emptyList(),
+    val auditLogs: List<AuditLogDto>? = emptyList()
 )
 
 data class PersonDto(
@@ -61,16 +62,27 @@ data class EmiDto(
     val isDeleted: Boolean
 )
 
+data class AuditLogDto(
+    val id: String,
+    val entityType: String,
+    val entityId: String,
+    val actionType: String,
+    val metadata: Map<String, Any>,
+    val createdAt: String
+)
+
 data class SyncPushRequest(
     val transactions: List<TransactionDto>,
     val people: List<PersonDto>? = emptyList(),
     val loans: List<LoanDto>? = emptyList(),
-    val emis: List<EmiDto>? = emptyList()
+    val emis: List<EmiDto>? = emptyList(),
+    val auditLogs: List<AuditLogDto>? = emptyList()
 )
 
 data class SyncPushResponse(
     val processedTransactionIds: List<String>,
     val processedPersonIds: List<String> = emptyList(),
     val processedLoanIds: List<String> = emptyList(),
-    val processedEmiIds: List<String> = emptyList()
+    val processedEmiIds: List<String> = emptyList(),
+    val processedAuditLogIds: List<String> = emptyList()
 )
