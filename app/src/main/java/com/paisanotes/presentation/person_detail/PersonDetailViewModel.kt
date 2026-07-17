@@ -52,23 +52,22 @@ class PersonDetailViewModel @Inject constructor(
         viewModelScope.launch {
             // We use flow 'combine' to listen to Loans and EMIs simultaneously
             combine(
-                personRepository.getAllPeople(), // Real app would have getPersonById Flow, using this for brevity
+                personRepository.getAllPeople(),
                 loanRepository.getLoansForPerson(personId),
                 emiRepository.getEmisForPerson(personId)
             ) { people, loans, emis ->
 
+                // 1. Find our person from the list
                 val person = people.find { it.id == personId }
 
-                // Calculate total exposure
-                val totalLoanAmount = loans.filter { it.status == "ACTIVE" }.sumOf { it.amountLent }
-                val totalEmiAmount = emis.filter { it.status == "ACTIVE" }.sumOf { it.principalAmount }
-                val totalExposure = totalLoanAmount + totalEmiAmount
+                // The SQLite query we wrote in PersonDao already calculated this perfectly.
+                val totalExposure = person?.totalExposure ?: 0.0
 
                 PersonDetailState(
                     person = person,
                     loans = loans,
                     proxyEmis = emis,
-                    totalExposure = totalExposure,
+                    totalExposure = totalExposure, // Using the DB's math!
                     isLoading = false
                 )
             }.collectLatest { combinedState ->

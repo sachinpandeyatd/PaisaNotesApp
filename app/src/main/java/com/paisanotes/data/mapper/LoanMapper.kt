@@ -9,18 +9,34 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 fun LoanEntity.toDomainModel() = Loan(
-    id = id, personId = personId, amountLent = amountLent,
-    dateGiven = dateGiven, expectedReturnDate = expectedReturnDate,
-    amountRepaid = amountRepaid, type = type,
-    status = status, notes = notes
+    id = id,
+    personId = personId,
+    type = type,
+    amountLent = amountLent,
+    amountRepaid = amountRepaid,
+    dateGiven = dateGiven,
+    expectedReturnDate = expectedReturnDate,
+    status = status,
+    notes = notes
 )
 
-fun Loan.toEntity() = LoanEntity(
-    id = id, personId = personId, amountLent = amountLent,
-    dateGiven = dateGiven, expectedReturnDate = expectedReturnDate,
-    status = status, notes = notes,
-    amountRepaid = amountRepaid, type = type,
-    createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis()
+fun Loan.toEntity(
+    syncStatus: SyncStatus = SyncStatus.PENDING_INSERT,
+    createdAt: Long = System.currentTimeMillis(),
+    updatedAt: Long = System.currentTimeMillis()
+) = LoanEntity(
+    id = id,
+    personId = personId,
+    type = type,
+    amountLent = amountLent,
+    amountRepaid = amountRepaid,
+    dateGiven = dateGiven,
+    expectedReturnDate = expectedReturnDate,
+    status = status,
+    notes = notes,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+    syncStatus = syncStatus
 )
 
 fun LoanEntity.toDto(): LoanDto {
@@ -28,13 +44,13 @@ fun LoanEntity.toDto(): LoanDto {
     return LoanDto(
         id = id,
         personId = personId,
+        type = type,
         amountLent = amountLent,
+        amountRepaid = amountRepaid,
         dateGiven = formatter.format(Instant.ofEpochMilli(dateGiven)),
         expectedReturnDate = expectedReturnDate?.let { formatter.format(Instant.ofEpochMilli(it)) },
         status = status,
         notes = notes,
-        amountRepaid = amountRepaid,
-        type = type,
         createdAt = formatter.format(Instant.ofEpochMilli(createdAt)),
         updatedAt = formatter.format(Instant.ofEpochMilli(updatedAt)),
         isDeleted = isDeleted
@@ -45,13 +61,14 @@ fun com.paisanotes.data.remote.dto.LoanDto.toEntity(): LoanEntity {
     return LoanEntity(
         id = id,
         personId = personId,
+        type = type,
         amountLent = amountLent,
-        dateGiven = java.time.ZonedDateTime.parse(dateGiven + "T00:00:00Z").toInstant().toEpochMilli(), // LocalDate patch
+        amountRepaid = amountRepaid,
+        // Handle LocalDate parsing safely
+        dateGiven = java.time.ZonedDateTime.parse(dateGiven + "T00:00:00Z").toInstant().toEpochMilli(),
         expectedReturnDate = expectedReturnDate?.let { java.time.ZonedDateTime.parse(it + "T00:00:00Z").toInstant().toEpochMilli() },
         status = status,
         notes = notes,
-        amountRepaid = amountRepaid,
-        type = type,
         createdAt = java.time.ZonedDateTime.parse(createdAt).toInstant().toEpochMilli(),
         updatedAt = java.time.ZonedDateTime.parse(updatedAt).toInstant().toEpochMilli(),
         isDeleted = isDeleted,

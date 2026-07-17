@@ -54,7 +54,8 @@ class AddLoanViewModel @Inject constructor(
                 dateGiven = System.currentTimeMillis(),
                 expectedReturnDate = null,
                 status = "ACTIVE",
-                notes = _state.value.notes
+                notes = _state.value.notes,
+                amountRepaid = 0.0,
             )
             repository.saveLoan(loan) // Saves to Room!
             _state.update { it.copy(isSaving = false, saveSuccess = true) }

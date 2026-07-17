@@ -8,6 +8,6 @@ data class Loan(
     val expectedReturnDate: Long?,
     val status: String, // ACTIVE, CLOSED
     val notes: String?,
-    val amountRepaid: Double = 0.0,
-    val type: String = "LENT"
+    val amountRepaid: Double,
+    val type: String
 )
