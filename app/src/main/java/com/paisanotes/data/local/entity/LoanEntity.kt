@@ -15,6 +15,7 @@ data class LoanEntity(
     val status: String = "ACTIVE", // "ACTIVE" or "CLOSED"
     val notes: String?,
     val amountRepaid: Double = 0.0,
+    val type: String = "LENT",
     
     // Auditing & Sync
     val createdAt: Long,

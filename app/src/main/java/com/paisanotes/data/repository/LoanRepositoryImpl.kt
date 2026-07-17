@@ -74,11 +74,14 @@ class LoanRepositoryImpl @Inject constructor(
         ))
 
         // 2. Add an INCOME transaction automatically
+        val txnType = if (entity.type == "LENT") "INCOME" else "EXPENSE"
+        val categoryText = if (entity.type == "LENT") "Loan Repayment Received" else "Loan Repayment Sent"
+
         val txnId = UUID.randomUUID().toString()
         transactionDao.insertTransaction(
             TransactionEntity(
-                id = txnId, amount = amount, transactionType = "INCOME", merchant = null,
-                category = "Loan Repayment", transactionDate = System.currentTimeMillis(),
+                id = txnId, amount = amount, transactionType = txnType, merchant = null,
+                category = categoryText, transactionDate = System.currentTimeMillis(),
                 paymentMethod = "CASH", source = "LOAN_REPAYMENT", notes = "Repayment for Loan",
                 createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis(),
                 syncStatus = SyncStatus.PENDING_INSERT

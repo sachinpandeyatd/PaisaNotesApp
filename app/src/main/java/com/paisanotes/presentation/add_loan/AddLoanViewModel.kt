@@ -1,5 +1,6 @@
 package com.paisanotes.presentation.add_loan
 
+import androidx.compose.ui.text.font.Typeface
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,6 +18,7 @@ import java.util.UUID
 import javax.inject.Inject
 
 data class AddLoanState(
+    val type: String = "LENT",
     val amount: String = "",
     val notes: String = "",
     val isSaving: Boolean = false,
@@ -36,6 +38,7 @@ class AddLoanViewModel @Inject constructor(
 
     fun onAmountChange(value: String) { _state.update { it.copy(amount = value) } }
     fun onNotesChange(value: String) { _state.update { it.copy(notes = value) } }
+    fun onTypeChange(type: String) { _state.update { it.copy(type = type) } }
 
     fun saveLoan() {
         val parsedAmount = _state.value.amount.toDoubleOrNull()
@@ -46,6 +49,7 @@ class AddLoanViewModel @Inject constructor(
             val loan = Loan(
                 id = UUID.randomUUID().toString(),
                 personId = personId,
+                type = _state.value.type,
                 amountLent = parsedAmount,
                 dateGiven = System.currentTimeMillis(),
                 expectedReturnDate = null,

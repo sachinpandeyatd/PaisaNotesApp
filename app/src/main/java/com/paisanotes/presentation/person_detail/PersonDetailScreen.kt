@@ -228,10 +228,15 @@ fun LoansList(loans: List<Loan>, onRecordRepayment: (String, Double) -> Unit) {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(loans, key = { it.id }) { loan ->
                 val formatter = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
-                val pending = loan.amountLent - loan.amountRepaid // Calculate pending amount
+                val pending = loan.amountLent - loan.amountRepaid
+                val isLent = loan.type == "LENT"
+
+                // If I lent money, it's Red (they owe me). If I borrowed, it's Green (I owe them).
+                val amountColor = if (isLent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                val headlineText = if (isLent) "You Lent: ${formatter.format(loan.amountLent)}" else "You Borrowed: ${formatter.format(loan.amountLent)}"
 
                 ListItem(
-                    headlineContent = { Text(formatter.format(loan.amountLent), fontWeight = FontWeight.Bold) },
+                    headlineContent = { Text(headlineText, fontWeight = FontWeight.Bold, color = amountColor) },
                     supportingContent = { Text("Pending: ${formatter.format(pending)}") },
                     trailingContent = {
                         if (loan.status == "ACTIVE") {

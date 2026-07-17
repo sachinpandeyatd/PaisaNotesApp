@@ -37,6 +37,23 @@ fun AddLoanScreen(
             modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                FilterChip(
+                    selected = state.type == "LENT",
+                    onClick = { viewModel.onTypeChange("LENT") },
+                    label = { Text("I Lent Money") },
+                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.errorContainer)
+                )
+                FilterChip(
+                    selected = state.type == "BORROWED",
+                    onClick = { viewModel.onTypeChange("BORROWED") },
+                    label = { Text("I Borrowed Money") },
+                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primaryContainer)
+                )
+            }
             OutlinedTextField(
                 value = state.amount,
                 onValueChange = viewModel::onAmountChange,

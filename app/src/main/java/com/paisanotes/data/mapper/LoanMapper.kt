@@ -11,7 +11,7 @@ import java.time.format.DateTimeFormatter
 fun LoanEntity.toDomainModel() = Loan(
     id = id, personId = personId, amountLent = amountLent,
     dateGiven = dateGiven, expectedReturnDate = expectedReturnDate,
-    amountRepaid = amountRepaid,
+    amountRepaid = amountRepaid, type = type,
     status = status, notes = notes
 )
 
@@ -19,7 +19,7 @@ fun Loan.toEntity() = LoanEntity(
     id = id, personId = personId, amountLent = amountLent,
     dateGiven = dateGiven, expectedReturnDate = expectedReturnDate,
     status = status, notes = notes,
-    amountRepaid = amountRepaid,
+    amountRepaid = amountRepaid, type = type,
     createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis()
 )
 
@@ -34,6 +34,7 @@ fun LoanEntity.toDto(): LoanDto {
         status = status,
         notes = notes,
         amountRepaid = amountRepaid,
+        type = type,
         createdAt = formatter.format(Instant.ofEpochMilli(createdAt)),
         updatedAt = formatter.format(Instant.ofEpochMilli(updatedAt)),
         isDeleted = isDeleted
@@ -50,6 +51,7 @@ fun com.paisanotes.data.remote.dto.LoanDto.toEntity(): LoanEntity {
         status = status,
         notes = notes,
         amountRepaid = amountRepaid,
+        type = type,
         createdAt = java.time.ZonedDateTime.parse(createdAt).toInstant().toEpochMilli(),
         updatedAt = java.time.ZonedDateTime.parse(updatedAt).toInstant().toEpochMilli(),
         isDeleted = isDeleted,

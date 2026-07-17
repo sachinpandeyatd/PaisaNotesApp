@@ -42,6 +42,7 @@ data class LoanDto(
     val status: String,
     val notes: String?,
     val amountRepaid: Double,
+    val type: String,
     val createdAt: String,
     val updatedAt: String,
     val isDeleted: Boolean
