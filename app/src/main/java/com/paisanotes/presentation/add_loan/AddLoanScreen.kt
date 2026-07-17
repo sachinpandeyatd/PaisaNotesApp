@@ -44,13 +44,13 @@ fun AddLoanScreen(
                 FilterChip(
                     selected = state.type == "LENT",
                     onClick = { viewModel.onTypeChange("LENT") },
-                    label = { Text("I Lent Money") },
+                    label = { Text("Given") },
                     colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.errorContainer)
                 )
                 FilterChip(
                     selected = state.type == "BORROWED",
                     onClick = { viewModel.onTypeChange("BORROWED") },
-                    label = { Text("I Borrowed Money") },
+                    label = { Text("Taken") },
                     colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primaryContainer)
                 )
             }

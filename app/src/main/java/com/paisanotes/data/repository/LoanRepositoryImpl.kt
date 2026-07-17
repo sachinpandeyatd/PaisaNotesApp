@@ -41,20 +41,37 @@ class LoanRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveLoan(loan: Loan) {
-        // Since we don't have Edit Loan yet, we assume CREATE for now.
-        // We will update this when we build the Edit feature.
         val entity = loan.toEntity().copy(syncStatus = SyncStatus.PENDING_INSERT)
         dao.insertLoan(entity)
 
-        // 🚨 CREATE AUDIT LOG
-        val metadataJson = """{"amountLent": ${loan.amountLent}, "status": "${loan.status}"}"""
-        val auditLog = AuditLogEntity(
+        val txnType = if (loan.type == "LENT") "EXPENSE" else "INCOME"
+        val categoryText = if (loan.type == "LENT") "Given to Friend" else "Received from Friend"
+        val txnId = java.util.UUID.randomUUID().toString()
+
+        transactionDao.insertTransaction(
+            com.paisanotes.data.local.entity.TransactionEntity(
+                id = txnId, amount = loan.amountLent, transactionType = txnType, merchant = null,
+                category = categoryText, transactionDate = loan.dateGiven,
+                paymentMethod = "CASH", source = "FRIEND_LEDGER", notes = loan.notes,
+                createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis(),
+                syncStatus = SyncStatus.PENDING_INSERT
+            )
+        )
+
+        val metadataJson = """{"amount": ${loan.amountLent}, "type": "${loan.type}"}"""
+
+        auditLogDao.insertLog(AuditLogEntity(
             entityType = "LOAN",
             entityId = loan.id,
             actionType = "CREATE",
-            metadata = metadataJson
+            metadata = metadataJson)
         )
-        auditLogDao.insertLog(auditLog)
+        auditLogDao.insertLog(AuditLogEntity(
+            entityType = "TRANSACTION",
+            entityId = txnId,
+            actionType = "CREATE",
+            metadata = """{"amount": ${loan.amountLent}}""")
+        )
 
         triggerBackgroundSync()
     }

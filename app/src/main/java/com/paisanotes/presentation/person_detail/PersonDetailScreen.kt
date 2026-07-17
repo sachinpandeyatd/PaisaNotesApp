@@ -126,8 +126,7 @@ fun PersonDetailScreen(
             ) { page ->
                 when (page) {
                     0 -> LoansList(
-                        loans = state.loans,
-                        onRecordRepayment = viewModel::recordLoanRepayment //
+                        loans = state.loans
                     )
                     1 -> EmisList(
                         emis = state.proxyEmis,
@@ -216,74 +215,46 @@ fun ExposureHeader(totalExposure: Double, phone: String?) {
 }
 
 @Composable
-fun LoansList(loans: List<Loan>, onRecordRepayment: (String, Double) -> Unit) {
-    var selectedLoan by remember { mutableStateOf<Loan?>(null) }
-    var repaymentAmount by remember { mutableStateOf("") }
-
+fun LoansList(loans: List<Loan>) {
     if (loans.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No active loans.")
+            Text("No history with this person yet.")
         }
     } else {
-        LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(loans, key = { it.id }) { loan ->
-                val formatter = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
-                val pending = loan.amountLent - loan.amountRepaid
-                val isLent = loan.type == "LENT"
+        // Sort by date descending so the newest events are at the top!
+        val sortedTimeline = loans.sortedByDescending { it.dateGiven }
 
-                // If I lent money, it's Red (they owe me). If I borrowed, it's Green (I owe them).
+        LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(sortedTimeline, key = { it.id }) { entry ->
+                val formatter = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
+                val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a", LocalLocale.current.platformLocale)
+
+                val isLent = entry.type == "LENT"
                 val amountColor = if (isLent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                val headlineText = if (isLent) "You Lent: ${formatter.format(loan.amountLent)}" else "You Borrowed: ${formatter.format(loan.amountLent)}"
+                val headlineText = if (isLent) "You Gave: ${formatter.format(entry.amountLent)}" else "You Got: ${formatter.format(entry.amountLent)}"
+                val sign = if (isLent) "-" else "+"
 
                 ListItem(
                     headlineContent = { Text(headlineText, fontWeight = FontWeight.Bold, color = amountColor) },
-                    supportingContent = { Text("Pending: ${formatter.format(pending)}") },
-                    trailingContent = {
-                        if (loan.status == "ACTIVE") {
-                            Button(
-                                onClick = { selectedLoan = loan },
-                                contentPadding = PaddingValues(horizontal = 8.dp)
-                            ) {
-                                Text("Pay")
+                    supportingContent = {
+                        Column {
+                            if (!entry.notes.isNullOrBlank()) {
+                                Text(entry.notes, style = MaterialTheme.typography.bodyMedium)
                             }
-                        } else {
-                            Badge(containerColor = MaterialTheme.colorScheme.primary) { Text("CLOSED") }
+                            Text(sdf.format(Date(entry.dateGiven)), style = MaterialTheme.typography.labelSmall)
                         }
+                    },
+                    trailingContent = {
+                        Text(
+                            text = "$sign ${formatter.format(entry.amountLent)}",
+                            fontWeight = FontWeight.Bold,
+                            color = amountColor
+                        )
                     },
                     colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest)
                 )
             }
         }
-    }
-
-    // Modal Dialog for Partial Loan Payment
-    if (selectedLoan != null) {
-        AlertDialog(
-            onDismissRequest = { selectedLoan = null },
-            title = { Text("Record Repayment") },
-            text = {
-                OutlinedTextField(
-                    value = repaymentAmount,
-                    onValueChange = { repaymentAmount = it },
-                    label = { Text("Amount Received") },
-                    prefix = { Text("₹") },
-                    singleLine = true
-                )
-            },
-            confirmButton = {
-                Button(onClick = {
-                    val amt = repaymentAmount.toDoubleOrNull()
-                    if (amt != null && amt > 0) {
-                        onRecordRepayment(selectedLoan!!.id, amt)
-                        selectedLoan = null
-                        repaymentAmount = ""
-                    }
-                }) { Text("Confirm") }
-            },
-            dismissButton = {
-                TextButton(onClick = { selectedLoan = null }) { Text("Cancel") }
-            }
-        )
     }
 }
 

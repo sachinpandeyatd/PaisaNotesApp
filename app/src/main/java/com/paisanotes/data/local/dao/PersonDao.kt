@@ -35,10 +35,10 @@ interface PersonDao {
                (
                  COALESCE((SELECT SUM(
                      CASE 
-                        WHEN type = 'LENT' THEN (amountLent - amountRepaid) 
-                        ELSE -(amountLent - amountRepaid) 
+                        WHEN type = 'LENT' THEN amountLent 
+                        ELSE -amountLent 
                      END
-                 ) FROM loans WHERE personId = p.id AND status = 'ACTIVE' AND isDeleted = 0), 0.0) 
+                 ) FROM loans WHERE personId = p.id AND isDeleted = 0), 0.0) 
                  +
                  COALESCE((SELECT SUM(principalAmount) FROM emis WHERE personId = p.id AND status = 'ACTIVE' AND isDeleted = 0), 0.0)
                ) AS totalExposure
