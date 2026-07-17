@@ -21,6 +21,8 @@ import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.paisanotes.R // 🚨 Ensure this matches your package name
 import kotlinx.coroutines.launch
+import java.security.MessageDigest
+import java.util.UUID
 
 @Composable
 fun LoginScreen(
@@ -83,11 +85,16 @@ fun LoginScreen(
                 coroutineScope.launch {
                     try {
                         val credentialManager = CredentialManager.create(context)
+                        val rawNonce = UUID.randomUUID().toString()
+                        val bytes = MessageDigest.getInstance("SHA-256").digest(rawNonce.toByteArray())
+                        val hashedNonce = bytes.joinToString("") { "%02x".format(it) }
 
+                        android.util.Log.d("Auth", "Web Client ID: $webClientId")
                         val googleIdOption = GetGoogleIdOption.Builder()
                             .setFilterByAuthorizedAccounts(false)
-                            .setServerClientId(webClientId) // Needs the Web ID!
-                            .setAutoSelectEnabled(true)
+                            .setServerClientId(webClientId)
+                            .setNonce(hashedNonce)
+                            .setAutoSelectEnabled(false)
                             .build()
 
                         val request = GetCredentialRequest.Builder()
