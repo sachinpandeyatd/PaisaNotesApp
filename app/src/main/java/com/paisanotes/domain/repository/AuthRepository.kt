@@ -8,4 +8,5 @@ interface AuthRepository {
     suspend fun register(request: RegisterRequest): Result<Unit>
     fun isLoggedIn(): Boolean
     fun logout()
+    suspend fun googleLogin(idToken: String): Result<Unit>
 }

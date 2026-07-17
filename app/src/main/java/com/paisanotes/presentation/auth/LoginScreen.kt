@@ -1,18 +1,26 @@
 package com.paisanotes.presentation.auth
 
+import android.app.Activity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.paisanotes.R // 🚨 Ensure this matches your package name
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
@@ -20,18 +28,18 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
-    // Trigger navigation when login succeeds
+    // Grab the Client ID from strings.xml
+    val webClientId = com.paisanotes.BuildConfig.GOOGLE_WEB_CLIENT_ID
+
     LaunchedEffect(state.loginSuccess) {
-        if (state.loginSuccess) {
-            onLoginSuccess()
-        }
+        if (state.loginSuccess) onLoginSuccess()
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier = Modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -39,19 +47,15 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         OutlinedTextField(
-            value = state.email,
-            onValueChange = viewModel::onEmailChange,
-            label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth(),
+            value = state.email, onValueChange = viewModel::onEmailChange,
+            label = { Text("Email") }, modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
         )
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
-            value = state.password,
-            onValueChange = viewModel::onPasswordChange,
-            label = { Text("Password") },
-            modifier = Modifier.fillMaxWidth(),
+            value = state.password, onValueChange = viewModel::onPasswordChange,
+            label = { Text("Password") }, modifier = Modifier.fillMaxWidth(),
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
         )
@@ -63,15 +67,55 @@ fun LoginScreen(
         }
 
         Button(
-            onClick = viewModel::login,
+            onClick = viewModel::login, modifier = Modifier.fillMaxWidth(), enabled = !state.isLoading
+        ) {
+            if (state.isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+            else Text("Login")
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+        Text("OR", style = MaterialTheme.typography.bodyMedium)
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // 🚨 GOOGLE SIGN-IN BUTTON
+        OutlinedButton(
+            onClick = {
+                coroutineScope.launch {
+                    try {
+                        val credentialManager = CredentialManager.create(context)
+
+                        val googleIdOption = GetGoogleIdOption.Builder()
+                            .setFilterByAuthorizedAccounts(false)
+                            .setServerClientId(webClientId) // Needs the Web ID!
+                            .setAutoSelectEnabled(true)
+                            .build()
+
+                        val request = GetCredentialRequest.Builder()
+                            .addCredentialOption(googleIdOption)
+                            .build()
+
+                        // This pops up the beautiful Android bottom sheet!
+                        val result = credentialManager.getCredential(context as Activity, request)
+
+                        // Extract the token
+                        val credential = result.credential
+                        if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                            val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                            val idToken = googleIdTokenCredential.idToken
+
+                            // Send token to our Spring Boot backend!
+                            viewModel.googleLogin(idToken)
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        // User cancelled or no Google accounts found
+                    }
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             enabled = !state.isLoading
         ) {
-            if (state.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-            } else {
-                Text("Login")
-            }
+            Text("Sign in with Google")
         }
     }
 }

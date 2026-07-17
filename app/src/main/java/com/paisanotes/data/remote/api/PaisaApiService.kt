@@ -1,6 +1,7 @@
 package com.paisanotes.data.remote.api
 
 import com.paisanotes.data.remote.dto.AuthResponse
+import com.paisanotes.data.remote.dto.GoogleLoginRequest
 import com.paisanotes.data.remote.dto.LoginRequest
 import com.paisanotes.data.remote.dto.RegisterRequest
 import com.paisanotes.data.remote.dto.SyncPullResponse
@@ -31,4 +32,7 @@ interface PaisaApiService {
     suspend fun pushData(
         @Body request: SyncPushRequest
     ): Response<SyncPushResponse>
+
+    @POST("api/v1/auth/google")
+    suspend fun googleLogin(@Body request: GoogleLoginRequest): Response<AuthResponse>
 }

@@ -11,3 +11,7 @@ data class AuthResponse(
     val name: String,
     val email: String
 )
+
+data class GoogleLoginRequest(
+    val idToken: String
+)

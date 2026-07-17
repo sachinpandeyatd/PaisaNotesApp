@@ -2,6 +2,7 @@ package com.paisanotes.data.repository
 
 import com.paisanotes.data.local.TokenManager
 import com.paisanotes.data.remote.api.PaisaApiService
+import com.paisanotes.data.remote.dto.GoogleLoginRequest
 import com.paisanotes.data.remote.dto.LoginRequest
 import com.paisanotes.data.remote.dto.RegisterRequest
 import com.paisanotes.domain.repository.AuthRepository
@@ -54,5 +55,23 @@ class AuthRepositoryImpl @Inject constructor(
 
     override fun logout() {
         tokenManager.clearToken()
+    }
+
+    override suspend fun googleLogin(idToken: String): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val request = GoogleLoginRequest(idToken)
+                val response = api.googleLogin(request)
+                if (response.isSuccessful && response.body() != null) {
+                    val authResponse = response.body()!!
+                    tokenManager.saveToken(authResponse.token) // SAVE JWT!
+                    Result.success(Unit)
+                } else {
+                    Result.failure(Exception("Google Sign-In rejected by server"))
+                }
+            } catch (e: Exception) {
+                Result.failure(Exception("Network error. Is Spring Boot running?"))
+            }
+        }
     }
 }
