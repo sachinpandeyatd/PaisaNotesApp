@@ -8,8 +8,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -17,12 +15,11 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import com.paisanotes.R // 🚨 Ensure this matches your package name
 import kotlinx.coroutines.launch
-import java.security.MessageDigest
-import java.util.UUID
+import java.security.SecureRandom
+import android.util.Base64
 
 @Composable
 fun LoginScreen(
@@ -85,20 +82,19 @@ fun LoginScreen(
                 coroutineScope.launch {
                     try {
                         val credentialManager = CredentialManager.create(context)
-                        val rawNonce = UUID.randomUUID().toString()
-                        val bytes = MessageDigest.getInstance("SHA-256").digest(rawNonce.toByteArray())
-                        val hashedNonce = bytes.joinToString("") { "%02x".format(it) }
+                        val randomBytes = ByteArray(32)
+                        SecureRandom().nextBytes(randomBytes)
+                        val hashedNonce = Base64.encodeToString(randomBytes, Base64.NO_WRAP or Base64.URL_SAFE or Base64.NO_PADDING)
 
                         android.util.Log.d("Auth", "Web Client ID: $webClientId")
-                        val googleIdOption = GetGoogleIdOption.Builder()
-                            .setFilterByAuthorizedAccounts(false)
-                            .setServerClientId(webClientId)
-                            .setNonce(hashedNonce)
-                            .setAutoSelectEnabled(false)
+
+                        val signInWithGoogleOption = GetSignInWithGoogleOption.Builder(
+                            serverClientId = webClientId
+                        ).setNonce(hashedNonce)
                             .build()
 
                         val request = GetCredentialRequest.Builder()
-                            .addCredentialOption(googleIdOption)
+                            .addCredentialOption(signInWithGoogleOption)
                             .build()
 
                         // This pops up the beautiful Android bottom sheet!
