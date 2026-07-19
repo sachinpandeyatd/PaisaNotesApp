@@ -29,6 +29,10 @@ data class AddLoanRoute(val personId: String)
 @Serializable
 data class AddEmiRoute(val personId: String)
 
+// Add this below LoginRoute
+@Serializable
+data object RegisterRoute
+
 // --- NEW: Bottom Navigation Helper ---
 data class TopLevelRoute<T : Any>(
     val name: String,

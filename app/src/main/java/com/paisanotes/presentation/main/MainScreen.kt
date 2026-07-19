@@ -20,12 +20,14 @@ import com.paisanotes.presentation.add_emi.AddEmiScreen
 import com.paisanotes.presentation.add_loan.AddLoanScreen
 import com.paisanotes.presentation.add_transaction.AddTransactionScreen
 import com.paisanotes.presentation.auth.LoginScreen
+import com.paisanotes.presentation.auth.RegisterScreen
 import com.paisanotes.presentation.navigation.AddEmiRoute
 import com.paisanotes.presentation.navigation.AddLoanRoute
 import com.paisanotes.presentation.navigation.AddTransactionRoute
 import com.paisanotes.presentation.navigation.LoginRoute
 import com.paisanotes.presentation.navigation.PeopleRoute
 import com.paisanotes.presentation.navigation.PersonDetailRoute
+import com.paisanotes.presentation.navigation.RegisterRoute
 import com.paisanotes.presentation.navigation.TransactionsRoute
 import com.paisanotes.presentation.navigation.bottomNavItems
 import com.paisanotes.presentation.people.PeopleScreen
@@ -43,6 +45,7 @@ fun MainScreen(startDestination: Any) {
     // Hide BottomBar on Login and Add Transaction screens
     val hideBottomBar = currentDestination?.hasRoute(LoginRoute::class) == true ||
             currentDestination?.hasRoute(AddTransactionRoute::class) == true ||
+            currentDestination?.hasRoute(RegisterRoute::class) == true ||
             currentDestination?.hasRoute(AddLoanRoute::class) == true ||
             currentDestination?.hasRoute(AddEmiRoute::class) == true
 
@@ -86,11 +89,31 @@ fun MainScreen(startDestination: Any) {
         ) {
             // 1. LOGIN
             composable<LoginRoute> {
-                LoginScreen(onLoginSuccess = {
-                    navController.navigate(TransactionsRoute) {
-                        popUpTo(LoginRoute) { inclusive = true }
+                LoginScreen(
+                    onLoginSuccess = {
+                        navController.navigate(TransactionsRoute) {
+                            popUpTo(LoginRoute) { inclusive = true }
+                        }
+                    },
+                    onNavigateToRegister = {
+                        navController.navigate(RegisterRoute)
                     }
-                })
+                )
+            }
+
+            // 2. REGISTER
+            composable<RegisterRoute> {
+                RegisterScreen(
+                    onRegisterSuccess = {
+                        navController.navigate(TransactionsRoute) {
+                            // If they registered, pop everything off so they can't go back to login/register
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                    onNavigateToLogin = {
+                        navController.popBackStack()
+                    }
+                )
             }
 
             // 2. TRANSACTIONS TAB

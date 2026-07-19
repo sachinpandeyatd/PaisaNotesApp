@@ -1,6 +1,7 @@
 package com.paisanotes.presentation.auth
 
 import android.app.Activity
+import android.util.Base64
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -15,22 +16,22 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import kotlinx.coroutines.launch
 import java.security.SecureRandom
-import android.util.Base64
 
 @Composable
 fun LoginScreen(
     viewModel: AuthViewModel = hiltViewModel(),
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit,
+    onNavigateToRegister: () -> Unit // 🚨 NEW CALLBACK
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    // Grab the Client ID from strings.xml
     val webClientId = com.paisanotes.BuildConfig.GOOGLE_WEB_CLIENT_ID
 
     LaunchedEffect(state.loginSuccess) {
@@ -72,46 +73,45 @@ fun LoginScreen(
             else Text("Login")
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-        Text("OR", style = MaterialTheme.typography.bodyMedium)
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // 🚨 GOOGLE SIGN-IN BUTTON
         OutlinedButton(
             onClick = {
                 coroutineScope.launch {
                     try {
                         val credentialManager = CredentialManager.create(context)
+
                         val randomBytes = ByteArray(32)
                         SecureRandom().nextBytes(randomBytes)
                         val hashedNonce = Base64.encodeToString(randomBytes, Base64.NO_WRAP or Base64.URL_SAFE or Base64.NO_PADDING)
 
                         android.util.Log.d("Auth", "Web Client ID: $webClientId")
 
-                        val signInWithGoogleOption = GetSignInWithGoogleOption.Builder(
-                            serverClientId = webClientId
-                        ).setNonce(hashedNonce)
+                        val googleIdOption = GetGoogleIdOption.Builder()
+                            .setFilterByAuthorizedAccounts(false)
+                            .setServerClientId(webClientId)
+                            .setNonce(hashedNonce)
+                            .setAutoSelectEnabled(false)
+                            .build()
+
+                        val signInWithGoogleOption = GetSignInWithGoogleOption.Builder(webClientId)
+                            .setNonce(hashedNonce)
                             .build()
 
                         val request = GetCredentialRequest.Builder()
+                            .addCredentialOption(googleIdOption)
                             .addCredentialOption(signInWithGoogleOption)
                             .build()
 
-                        // This pops up the beautiful Android bottom sheet!
                         val result = credentialManager.getCredential(context as Activity, request)
 
-                        // Extract the token
                         val credential = result.credential
                         if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                             val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
-                            val idToken = googleIdTokenCredential.idToken
-
-                            // Send token to our Spring Boot backend!
-                            viewModel.googleLogin(idToken)
+                            viewModel.googleLogin(googleIdTokenCredential.idToken)
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        // User cancelled or no Google accounts found
                     }
                 }
             },
@@ -119,6 +119,13 @@ fun LoginScreen(
             enabled = !state.isLoading
         ) {
             Text("Sign in with Google")
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // 🚨 NAVIGATION TO SIGN UP
+        TextButton(onClick = onNavigateToRegister) {
+            Text("Don't have an account? Sign up")
         }
     }
 }
