@@ -42,4 +42,14 @@ interface TransactionDao {
 
     @Query("SELECT * FROM transactions WHERE isDeleted = 0 ORDER BY transactionDate DESC LIMIT :limit")
     fun getRecentTransactions(limit: Int): Flow<List<TransactionEntity>>
+
+    @Query("""
+        SELECT COUNT(*) FROM transactions 
+        WHERE amount = :amount 
+        AND transactionType = :type 
+        AND source = 'NOTIFICATION' 
+        AND transactionDate >= :timeThreshold 
+        AND isDeleted = 0
+    """)
+    suspend fun getDuplicateCount(amount: Double, type: String, timeThreshold: Long): Int
 }

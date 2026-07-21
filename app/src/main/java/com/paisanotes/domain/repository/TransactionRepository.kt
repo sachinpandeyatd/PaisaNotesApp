@@ -16,4 +16,6 @@ interface TransactionRepository {
     fun getIncomeBetween(startDate: Long, endDate: Long): Flow<Double>
     fun getExpenseBetween(startDate: Long, endDate: Long): Flow<Double>
     fun getRecentTransactions(limit: Int): Flow<List<Transaction>>
+
+    suspend fun hasRecentDuplicate(amount: Double, type: String, timeWindowMs: Long): Boolean
 }

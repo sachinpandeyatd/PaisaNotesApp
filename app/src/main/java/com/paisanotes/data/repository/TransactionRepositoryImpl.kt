@@ -123,4 +123,11 @@ class TransactionRepositoryImpl @Inject constructor(
             entities.map { it.toDomainModel() }
         }
     }
+
+    override suspend fun hasRecentDuplicate(amount: Double, type: String, timeWindowMs: Long): Boolean {
+        // Calculate the oldest timestamp we care about
+        val threshold = System.currentTimeMillis() - timeWindowMs
+        val duplicateCount = dao.getDuplicateCount(amount, type, threshold)
+        return duplicateCount > 0
+    }
 }

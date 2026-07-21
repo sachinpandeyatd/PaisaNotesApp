@@ -47,22 +47,33 @@ class PaisaNotificationListener : NotificationListenerService() {
         if (parsedData != null) {
             Log.d("PaisaListener", "Parsed successfully: $parsedData")
 
-            // 2. Automatically save the transaction to the database
             serviceScope.launch {
+
+                // DEDUPLICATION CHECK (e.g., 5-minute window = 5 * 60 * 1000 milliseconds)
+                val isDuplicate = repository.hasRecentDuplicate(
+                    amount = parsedData.amount,
+                    type = parsedData.type,
+                    timeWindowMs = 300_000L // 5 minutes
+                )
+
+                if (isDuplicate) {
+                    Log.d("PaisaListener", "Duplicate notification ignored for amount: ${parsedData.amount}")
+                    return@launch // Stop execution! Do not save!
+                }
+
+                // 2. If it's unique, save it as usual!
                 val transaction = Transaction(
                     id = UUID.randomUUID().toString(),
                     amount = parsedData.amount,
                     transactionType = parsedData.type,
                     merchant = parsedData.merchant,
-                    category = "Auto-Captured", // We can add ML categorization later!
+                    category = "Auto-Captured",
                     transactionDate = System.currentTimeMillis(),
                     paymentMethod = "UPI",
-                    source = "NOTIFICATION", // Audit trail magic!
+                    source = "NOTIFICATION",
                     notes = "Captured from $packageName"
                 )
 
-                // 🚨 This single line of code saves it to Room AND triggers the WorkManager
-                // to push it to Spring Boot!
                 repository.saveTransaction(transaction)
             }
         }
