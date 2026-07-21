@@ -33,6 +33,9 @@ data class AddEmiRoute(val personId: String)
 @Serializable
 data object RegisterRoute
 
+@Serializable
+data object SettingsRoute
+
 // --- NEW: Bottom Navigation Helper ---
 data class TopLevelRoute<T : Any>(
     val name: String,

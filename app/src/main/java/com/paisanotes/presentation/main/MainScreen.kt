@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,7 +49,8 @@ fun MainScreen(
             currentDestination?.hasRoute(RegisterRoute::class) == true ||
             currentDestination?.hasRoute(AddTransactionRoute::class) == true ||
             currentDestination?.hasRoute(AddLoanRoute::class) == true ||
-            currentDestination?.hasRoute(AddEmiRoute::class) == true
+            currentDestination?.hasRoute(AddEmiRoute::class) == true ||
+            currentDestination?.hasRoute(SettingsRoute::class) == true
 
     // 🚨 WRAP EVERYTHING IN THE DRAWER
     ModalNavigationDrawer(
@@ -78,6 +80,16 @@ fun MainScreen(
                         navController.navigate(LoginRoute) {
                             popUpTo(0) { inclusive = true }
                         }
+                    },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+                NavigationDrawerItem(
+                    icon = { Icon(androidx.compose.material.icons.Icons.Default.Settings, contentDescription = "Settings") },
+                    label = { Text("Settings") },
+                    selected = false,
+                    onClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        navController.navigate(SettingsRoute)
                     },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
@@ -157,6 +169,11 @@ fun MainScreen(
                 composable<AddTransactionRoute> { AddTransactionScreen(onNavigateBack = { navController.popBackStack() }) }
                 composable<AddLoanRoute> { AddLoanScreen(onNavigateBack = { navController.popBackStack() }) }
                 composable<AddEmiRoute> { AddEmiScreen(onNavigateBack = { navController.popBackStack() }) }
+                composable<SettingsRoute> {
+                    com.paisanotes.presentation.settings.SettingsScreen(
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
             }
         }
     }
