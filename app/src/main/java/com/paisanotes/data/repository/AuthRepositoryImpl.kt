@@ -1,5 +1,6 @@
 package com.paisanotes.data.repository
 
+import com.paisanotes.data.local.PaisaDatabase
 import com.paisanotes.data.local.TokenManager
 import com.paisanotes.data.remote.api.PaisaApiService
 import com.paisanotes.data.remote.dto.ForgotPasswordRequest
@@ -14,7 +15,8 @@ import javax.inject.Inject
 
 class AuthRepositoryImpl @Inject constructor(
     private val api: PaisaApiService,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val database: PaisaDatabase
 ) : AuthRepository {
 
     override suspend fun login(request: LoginRequest): Result<Unit> {
@@ -55,8 +57,12 @@ class AuthRepositoryImpl @Inject constructor(
         return tokenManager.getToken() != null
     }
 
-    override fun logout() {
-        tokenManager.clearToken()
+    override suspend fun logout() {
+        withContext(Dispatchers.IO) {
+            tokenManager.clearToken()
+
+            database.clearAllTables()
+        }
     }
 
     override suspend fun googleLogin(idToken: String): Result<Unit> {

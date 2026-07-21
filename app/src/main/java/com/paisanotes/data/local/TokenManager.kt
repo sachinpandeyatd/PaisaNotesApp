@@ -21,7 +21,7 @@ class TokenManager @Inject constructor(
     }
 
     fun clearToken() {
-        prefs.edit().remove("jwt_token").apply()
+        prefs.edit().remove("jwt_token").remove("last_sync_time").apply()
     }
 
     fun saveLastSyncTime(timestamp: String) {
