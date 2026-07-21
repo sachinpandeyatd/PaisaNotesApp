@@ -25,6 +25,7 @@ import com.paisanotes.presentation.add_transaction.AddTransactionScreen
 import com.paisanotes.presentation.auth.LoginScreen
 import com.paisanotes.presentation.main.MainScreen
 import com.paisanotes.presentation.navigation.AddTransactionRoute
+import com.paisanotes.presentation.navigation.HomeRoute
 import com.paisanotes.presentation.navigation.LoginRoute
 import com.paisanotes.presentation.navigation.PeopleRoute
 import com.paisanotes.presentation.navigation.TransactionsRoute
@@ -41,7 +42,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val startScreen = if (tokenManager.getToken() != null) TransactionsRoute else LoginRoute
+//        val startScreen = if (tokenManager.getToken() != null) TransactionsRoute else LoginRoute
+        val startScreen = if (tokenManager.getToken() != null) HomeRoute else LoginRoute
 
         setContent {
             MaterialTheme {

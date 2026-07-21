@@ -109,4 +109,18 @@ class TransactionRepositoryImpl @Inject constructor(
         // Fetch from DAO and convert Entity to Domain Model
         return dao.getTransactionById(id)?.toDomainModel()
     }
+
+    override fun getIncomeBetween(startDate: Long, endDate: Long): Flow<Double> {
+        return dao.getIncomeBetween(startDate, endDate).map { it ?: 0.0 }
+    }
+
+    override fun getExpenseBetween(startDate: Long, endDate: Long): Flow<Double> {
+        return dao.getExpenseBetween(startDate, endDate).map { it ?: 0.0 }
+    }
+
+    override fun getRecentTransactions(limit: Int): Flow<List<Transaction>> {
+        return dao.getRecentTransactions(limit).map { entities ->
+            entities.map { it.toDomainModel() }
+        }
+    }
 }

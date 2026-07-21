@@ -174,6 +174,14 @@ fun MainScreen(
                         onNavigateBack = { navController.popBackStack() }
                     )
                 }
+
+                composable<HomeRoute> {
+                    com.paisanotes.presentation.home.HomeScreen(
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } },
+                        onNavigateToAddTransaction = { navController.navigate(AddTransactionRoute(null)) },
+                        onNavigateToEditTransaction = { id -> navController.navigate(AddTransactionRoute(id)) }
+                    )
+                }
             }
         }
     }

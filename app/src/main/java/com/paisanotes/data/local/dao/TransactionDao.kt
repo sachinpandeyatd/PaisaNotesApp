@@ -33,4 +33,13 @@ interface TransactionDao {
 
     @Query("DELETE FROM transactions WHERE id IN (:ids)")
     suspend fun deletePhysically(ids: List<String>)
+
+    @Query("SELECT SUM(amount) FROM transactions WHERE isDeleted = 0 AND transactionType = 'INCOME' AND transactionDate BETWEEN :startDate AND :endDate")
+    fun getIncomeBetween(startDate: Long, endDate: Long): Flow<Double?>
+
+    @Query("SELECT SUM(amount) FROM transactions WHERE isDeleted = 0 AND transactionType = 'EXPENSE' AND transactionDate BETWEEN :startDate AND :endDate")
+    fun getExpenseBetween(startDate: Long, endDate: Long): Flow<Double?>
+
+    @Query("SELECT * FROM transactions WHERE isDeleted = 0 ORDER BY transactionDate DESC LIMIT :limit")
+    fun getRecentTransactions(limit: Int): Flow<List<TransactionEntity>>
 }

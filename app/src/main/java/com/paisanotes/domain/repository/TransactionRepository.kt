@@ -12,4 +12,8 @@ interface TransactionRepository {
     suspend fun deleteTransaction(transactionId: String)
 
     suspend fun getTransactionById(id: String): Transaction?
+
+    fun getIncomeBetween(startDate: Long, endDate: Long): Flow<Double>
+    fun getExpenseBetween(startDate: Long, endDate: Long): Flow<Double>
+    fun getRecentTransactions(limit: Int): Flow<List<Transaction>>
 }
