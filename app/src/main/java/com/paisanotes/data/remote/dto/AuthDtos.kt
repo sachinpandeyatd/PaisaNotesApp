@@ -15,3 +15,6 @@ data class AuthResponse(
 data class GoogleLoginRequest(
     val idToken: String
 )
+
+data class ForgotPasswordRequest(val email: String)
+data class ResetPasswordRequest(val email: String, val otp: String, val newPassword: String)

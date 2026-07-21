@@ -24,6 +24,7 @@ import com.paisanotes.domain.model.AuditLog
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.ui.platform.LocalLocale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,7 +74,7 @@ fun LogsScreen(
 
 @Composable
 fun AuditLogItem(log: AuditLog) {
-    val sdf = SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault())
+    val sdf = SimpleDateFormat("dd MMM, hh:mm a", LocalLocale.current.platformLocale)
     
     // Pick icon and color based on Action Type
     val (icon, color) = when (log.actionType) {

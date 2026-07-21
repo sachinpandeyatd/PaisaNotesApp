@@ -1,9 +1,11 @@
 package com.paisanotes.data.remote.api
 
 import com.paisanotes.data.remote.dto.AuthResponse
+import com.paisanotes.data.remote.dto.ForgotPasswordRequest
 import com.paisanotes.data.remote.dto.GoogleLoginRequest
 import com.paisanotes.data.remote.dto.LoginRequest
 import com.paisanotes.data.remote.dto.RegisterRequest
+import com.paisanotes.data.remote.dto.ResetPasswordRequest
 import com.paisanotes.data.remote.dto.SyncPullResponse
 import com.paisanotes.data.remote.dto.SyncPushRequest
 import com.paisanotes.data.remote.dto.SyncPushResponse
@@ -35,4 +37,10 @@ interface PaisaApiService {
 
     @POST("api/v1/auth/google")
     suspend fun googleLogin(@Body request: GoogleLoginRequest): Response<AuthResponse>
+
+    @POST("api/v1/auth/forgot-password")
+    suspend fun forgotPassword(@Body request: ForgotPasswordRequest): Response<Unit>
+
+    @POST("api/v1/auth/reset-password")
+    suspend fun resetPassword(@Body request: ResetPasswordRequest): Response<Unit>
 }

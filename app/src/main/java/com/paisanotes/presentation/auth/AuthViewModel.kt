@@ -19,7 +19,10 @@ data class AuthState(
     val password: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
-    val loginSuccess: Boolean = false
+    val loginSuccess: Boolean = false,
+    val otp: String = "",
+    val isOtpSent: Boolean = false,
+    val resetSuccess: Boolean = false
 )
 
 @HiltViewModel
@@ -69,6 +72,38 @@ class AuthViewModel @Inject constructor(
             _state.update { it.copy(isLoading = false, loginSuccess = true) }
         }.onFailure { exception ->
             _state.update { it.copy(isLoading = false, error = exception.message) }
+        }
+    }
+
+    fun onOtpChange(otp: String) { _state.update { it.copy(otp = otp) } }
+
+    fun requestOtp() {
+        viewModelScope.launch {
+            if (_state.value.email.isBlank()) {
+                _state.update { it.copy(error = "Please enter your email") }
+                return@launch
+            }
+            _state.update { it.copy(isLoading = true, error = null) }
+            repository.forgotPassword(_state.value.email)
+            // We always show the OTP screen next, even if email wasn't found (security best practice)
+            _state.update { it.copy(isLoading = false, isOtpSent = true) }
+        }
+    }
+
+    fun resetPassword() {
+        viewModelScope.launch {
+            val s = _state.value
+            if (s.otp.length != 6 || s.password.length < 6) {
+                _state.update { it.copy(error = "Invalid OTP or Password too short") }
+                return@launch
+            }
+            _state.update { it.copy(isLoading = true, error = null) }
+            val result = repository.resetPassword(s.email, s.otp, s.password)
+            result.onSuccess {
+                _state.update { it.copy(isLoading = false, resetSuccess = true) }
+            }.onFailure { e ->
+                _state.update { it.copy(isLoading = false, error = e.message) }
+            }
         }
     }
 }

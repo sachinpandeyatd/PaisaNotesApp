@@ -44,6 +44,9 @@ data object HomeRoute
 @Serializable
 data object LogsRoute
 
+@Serializable
+data object ForgotPasswordRoute
+
 // --- NEW: Bottom Navigation Helper ---
 data class TopLevelRoute<T : Any>(
     val name: String,

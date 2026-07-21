@@ -28,7 +28,8 @@ import java.util.UUID
 fun LoginScreen(
     viewModel: AuthViewModel = hiltViewModel(),
     onLoginSuccess: () -> Unit,
-    onNavigateToRegister: () -> Unit // 🚨 NEW CALLBACK
+    onNavigateToRegister: () -> Unit,
+    onNavigateToForgotPassword: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
@@ -74,6 +75,14 @@ fun LoginScreen(
             if (state.isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
             else Text("Login")
         }
+
+        TextButton(
+            onClick = onNavigateToForgotPassword,
+            modifier = Modifier.align(Alignment.End)
+        ) {
+            Text("Forgot Password?")
+        }
+
 
         Spacer(modifier = Modifier.height(16.dp))
 

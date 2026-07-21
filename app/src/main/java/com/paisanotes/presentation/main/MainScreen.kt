@@ -23,6 +23,7 @@ import androidx.navigation.compose.rememberNavController
 import com.paisanotes.presentation.add_emi.AddEmiScreen
 import com.paisanotes.presentation.add_loan.AddLoanScreen
 import com.paisanotes.presentation.add_transaction.AddTransactionScreen
+import com.paisanotes.presentation.auth.ForgotPasswordScreen
 import com.paisanotes.presentation.auth.LoginScreen
 import com.paisanotes.presentation.auth.RegisterScreen
 import com.paisanotes.presentation.navigation.*
@@ -50,7 +51,8 @@ fun MainScreen(
             currentDestination?.hasRoute(AddTransactionRoute::class) == true ||
             currentDestination?.hasRoute(AddLoanRoute::class) == true ||
             currentDestination?.hasRoute(AddEmiRoute::class) == true ||
-            currentDestination?.hasRoute(SettingsRoute::class) == true
+            currentDestination?.hasRoute(SettingsRoute::class) == true ||
+            currentDestination?.hasRoute(ForgotPasswordRoute::class) == true
 
     // 🚨 WRAP EVERYTHING IN THE DRAWER
     ModalNavigationDrawer(
@@ -130,7 +132,12 @@ fun MainScreen(
                         onLoginSuccess = {
                             navController.navigate(TransactionsRoute) { popUpTo(LoginRoute) { inclusive = true } }
                         },
-                        onNavigateToRegister = { navController.navigate(RegisterRoute) }
+                        onNavigateToRegister = {
+                            navController.navigate(RegisterRoute)
+                        },
+                        onNavigateToForgotPassword = {
+                            navController.navigate(ForgotPasswordRoute)
+                        }
                     )
                 }
                 composable<RegisterRoute> {
@@ -187,6 +194,10 @@ fun MainScreen(
                     com.paisanotes.presentation.logs.LogsScreen(
                         onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
                     )
+                }
+
+                composable<ForgotPasswordRoute> {
+                    ForgotPasswordScreen(onNavigateBack = { navController.popBackStack() })
                 }
             }
         }

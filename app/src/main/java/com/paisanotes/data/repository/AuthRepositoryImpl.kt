@@ -2,9 +2,11 @@ package com.paisanotes.data.repository
 
 import com.paisanotes.data.local.TokenManager
 import com.paisanotes.data.remote.api.PaisaApiService
+import com.paisanotes.data.remote.dto.ForgotPasswordRequest
 import com.paisanotes.data.remote.dto.GoogleLoginRequest
 import com.paisanotes.data.remote.dto.LoginRequest
 import com.paisanotes.data.remote.dto.RegisterRequest
+import com.paisanotes.data.remote.dto.ResetPasswordRequest
 import com.paisanotes.domain.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -72,6 +74,24 @@ class AuthRepositoryImpl @Inject constructor(
             } catch (e: Exception) {
                 Result.failure(Exception("Network error. Is Spring Boot running?"))
             }
+        }
+    }
+
+    override suspend fun forgotPassword(email: String): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = api.forgotPassword(ForgotPasswordRequest(email))
+                if (response.isSuccessful) Result.success(Unit) else Result.failure(Exception("Failed"))
+            } catch (e: Exception) { Result.failure(Exception("Network error")) }
+        }
+    }
+
+    override suspend fun resetPassword(email: String, otp: String, newPassword: String): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = api.resetPassword(ResetPasswordRequest(email, otp, newPassword))
+                if (response.isSuccessful) Result.success(Unit) else Result.failure(Exception("Invalid or Expired OTP"))
+            } catch (e: Exception) { Result.failure(Exception("Network error")) }
         }
     }
 }
