@@ -182,6 +182,12 @@ fun MainScreen(
                         onNavigateToEditTransaction = { id -> navController.navigate(AddTransactionRoute(id)) }
                     )
                 }
+
+                composable<LogsRoute> {
+                    com.paisanotes.presentation.logs.LogsScreen(
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
+                    )
+                }
             }
         }
     }

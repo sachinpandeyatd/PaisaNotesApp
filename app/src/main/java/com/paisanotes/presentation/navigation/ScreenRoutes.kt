@@ -2,6 +2,7 @@ package com.paisanotes.presentation.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -40,6 +41,9 @@ data object SettingsRoute
 @Serializable
 data object HomeRoute
 
+@Serializable
+data object LogsRoute
+
 // --- NEW: Bottom Navigation Helper ---
 data class TopLevelRoute<T : Any>(
     val name: String,
@@ -52,4 +56,5 @@ val bottomNavItems = listOf(
     TopLevelRoute("Transactions", TransactionsRoute, TransactionsRoute::class, Icons.Default.List),
     TopLevelRoute("People", PeopleRoute, PeopleRoute::class, Icons.Default.Person),
     TopLevelRoute("Home", HomeRoute, HomeRoute::class, Icons.Default.Home),
+    TopLevelRoute("Logs", LogsRoute, LogsRoute::class, Icons.Default.Info)
 )
