@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -27,7 +28,8 @@ import java.util.Locale
 @Composable
 fun PeopleScreen(
     viewModel: PeopleViewModel = hiltViewModel(),
-    onNavigateToPersonDetail: (String) -> Unit // Will use this later to view their loans/EMIs!
+    onNavigateToPersonDetail: (String) -> Unit, // Will use this later to view their loans/EMIs!
+    onOpenDrawer: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -38,7 +40,12 @@ fun PeopleScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                ),
+                navigationIcon = {
+                    IconButton(onClick = onOpenDrawer) {
+                        Icon(imageVector = Icons.Default.Menu, contentDescription = "Open Menu")
+                    }
+                },
             )
         },
         floatingActionButton = {

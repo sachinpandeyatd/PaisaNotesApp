@@ -1,14 +1,17 @@
 package com.paisanotes.presentation.main
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -21,145 +24,139 @@ import com.paisanotes.presentation.add_loan.AddLoanScreen
 import com.paisanotes.presentation.add_transaction.AddTransactionScreen
 import com.paisanotes.presentation.auth.LoginScreen
 import com.paisanotes.presentation.auth.RegisterScreen
-import com.paisanotes.presentation.navigation.AddEmiRoute
-import com.paisanotes.presentation.navigation.AddLoanRoute
-import com.paisanotes.presentation.navigation.AddTransactionRoute
-import com.paisanotes.presentation.navigation.LoginRoute
-import com.paisanotes.presentation.navigation.PeopleRoute
-import com.paisanotes.presentation.navigation.PersonDetailRoute
-import com.paisanotes.presentation.navigation.RegisterRoute
-import com.paisanotes.presentation.navigation.TransactionsRoute
-import com.paisanotes.presentation.navigation.bottomNavItems
+import com.paisanotes.presentation.navigation.*
 import com.paisanotes.presentation.people.PeopleScreen
 import com.paisanotes.presentation.person_detail.PersonDetailScreen
 import com.paisanotes.presentation.transactions.TransactionsScreen
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(startDestination: Any) {
+fun MainScreen(
+    startDestination: Any,
+    viewModel: MainViewModel = hiltViewModel() // 🚨 Inject the ViewModel
+) {
     val navController = rememberNavController()
-
-    // Track the current route to conditionally show/hide the BottomBar
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    // Hide BottomBar on Login and Add Transaction screens
+    // Drawer State
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val coroutineScope = rememberCoroutineScope()
+
     val hideBottomBar = currentDestination?.hasRoute(LoginRoute::class) == true ||
-            currentDestination?.hasRoute(AddTransactionRoute::class) == true ||
             currentDestination?.hasRoute(RegisterRoute::class) == true ||
+            currentDestination?.hasRoute(AddTransactionRoute::class) == true ||
             currentDestination?.hasRoute(AddLoanRoute::class) == true ||
             currentDestination?.hasRoute(AddEmiRoute::class) == true
 
-    Scaffold(
-        bottomBar = {
-            if (!hideBottomBar) {
-                NavigationBar {
-                    bottomNavItems.forEach { topLevelRoute ->
-
-                        // Check if the current route matches this tab
-                        val isSelected = currentDestination?.hierarchy?.any {
-                            it.hasRoute(topLevelRoute.routeClass)
-                        } == true
-
-                        NavigationBarItem(
-                            icon = { Icon(topLevelRoute.icon, contentDescription = topLevelRoute.name) },
-                            label = { Text(topLevelRoute.name) },
-                            selected = isSelected,
-                            onClick = {
-                                navController.navigate(topLevelRoute.route) {
-                                    // 🚨 INTERVIEW MAGIC: Prevent backstack bloat!
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-        }
-    ) { innerPadding ->
-
-        // This is the container where all our screens will be injected!
-        NavHost(
-            navController = navController,
-            startDestination = startDestination,
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            // 1. LOGIN
-            composable<LoginRoute> {
-                LoginScreen(
-                    onLoginSuccess = {
-                        navController.navigate(TransactionsRoute) {
-                            popUpTo(LoginRoute) { inclusive = true }
-                        }
-                    },
-                    onNavigateToRegister = {
-                        navController.navigate(RegisterRoute)
-                    }
+    // 🚨 WRAP EVERYTHING IN THE DRAWER
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        gesturesEnabled = !hideBottomBar, // Disable swiping drawer open on Login/Forms
+        drawerContent = {
+            ModalDrawerSheet {
+                Spacer(Modifier.height(24.dp))
+                Text(
+                    text = "PaisaNotes",
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.primary
                 )
-            }
+                HorizontalDivider()
+                Spacer(Modifier.height(16.dp))
 
-            // 2. REGISTER
-            composable<RegisterRoute> {
-                RegisterScreen(
-                    onRegisterSuccess = {
-                        navController.navigate(TransactionsRoute) {
-                            // If they registered, pop everything off so they can't go back to login/register
+                // LOGOUT BUTTON
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout") },
+                    label = { Text("Logout") },
+                    selected = false,
+                    onClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        viewModel.logout()
+                        // Route back to login and DESTROY the backstack
+                        navController.navigate(LoginRoute) {
                             popUpTo(0) { inclusive = true }
                         }
                     },
-                    onNavigateToLogin = {
-                        navController.popBackStack()
-                    }
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
             }
-
-            // 2. TRANSACTIONS TAB
-            composable<TransactionsRoute> {
-                TransactionsScreen(
-                    onNavigateToAddTransaction = { id ->
-                        navController.navigate(AddTransactionRoute(transactionId = id))
+        }
+    ) {
+        Scaffold(
+            bottomBar = {
+                if (!hideBottomBar) {
+                    NavigationBar {
+                        bottomNavItems.forEach { topLevelRoute ->
+                            val isSelected = currentDestination?.hierarchy?.any { it.hasRoute(topLevelRoute.routeClass) } == true
+                            NavigationBarItem(
+                                icon = { Icon(topLevelRoute.icon, contentDescription = topLevelRoute.name) },
+                                label = { Text(topLevelRoute.name) },
+                                selected = isSelected,
+                                onClick = {
+                                    navController.navigate(topLevelRoute.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            )
+                        }
                     }
-                )
+                }
             }
+        ) { innerPadding ->
+            NavHost(
+                navController = navController,
+                startDestination = startDestination,
+                modifier = Modifier.padding(innerPadding)
+            ) {
+                // 1. LOGIN & REGISTER
+                composable<LoginRoute> {
+                    LoginScreen(
+                        onLoginSuccess = {
+                            navController.navigate(TransactionsRoute) { popUpTo(LoginRoute) { inclusive = true } }
+                        },
+                        onNavigateToRegister = { navController.navigate(RegisterRoute) }
+                    )
+                }
+                composable<RegisterRoute> {
+                    RegisterScreen(
+                        onRegisterSuccess = {
+                            navController.navigate(TransactionsRoute) { popUpTo(0) { inclusive = true } }
+                        },
+                        onNavigateToLogin = { navController.popBackStack() }
+                    )
+                }
 
-            // 3. PEOPLE TAB
-            composable<PeopleRoute> {
-                PeopleScreen(onNavigateToPersonDetail = { personId ->
-                    navController.navigate(PersonDetailRoute(personId = personId))
-                })
-            }
+                // 2. TRANSACTIONS TAB
+                composable<TransactionsRoute> {
+                    TransactionsScreen(
+                        onNavigateToAddTransaction = { id -> navController.navigate(AddTransactionRoute(id)) },
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } } // 🚨 PASS DRAWER CALLBACK
+                    )
+                }
 
-            // 4. ADD TRANSACTION FORM
-            composable<AddTransactionRoute> {
-                AddTransactionScreen(onNavigateBack = {
-                    navController.popBackStack()
-                })
-            }
+                // 3. PEOPLE TAB
+                composable<PeopleRoute> {
+                    PeopleScreen(
+                        onNavigateToPersonDetail = { id -> navController.navigate(PersonDetailRoute(id)) },
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } } // 🚨 PASS DRAWER CALLBACK
+                    )
+                }
 
-            // 5. PERSON DETAIL SCREEN
-            composable<PersonDetailRoute> {
-                PersonDetailScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToAddLoan = { personId ->
-                        navController.navigate(AddLoanRoute(personId))
-                    },
-                    onNavigateToAddEmi = { personId ->
-                        navController.navigate(AddEmiRoute(personId))
-                    }
-                )
-            }
-
-            // 6. ADD LOAN
-            composable<AddLoanRoute> {
-                AddLoanScreen(onNavigateBack = { navController.popBackStack() })
-            }
-
-            // 7. ADD EMI
-            composable<AddEmiRoute> {
-                AddEmiScreen(onNavigateBack = { navController.popBackStack() })
+                // 4. PERSON DETAIL & FORMS (Keep your existing ones)
+                composable<PersonDetailRoute> {
+                    PersonDetailScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToAddLoan = { id -> navController.navigate(AddLoanRoute(id)) },
+                        onNavigateToAddEmi = { id -> navController.navigate(AddEmiRoute(id)) }
+                    )
+                }
+                composable<AddTransactionRoute> { AddTransactionScreen(onNavigateBack = { navController.popBackStack() }) }
+                composable<AddLoanRoute> { AddLoanScreen(onNavigateBack = { navController.popBackStack() }) }
+                composable<AddEmiRoute> { AddEmiScreen(onNavigateBack = { navController.popBackStack() }) }
             }
         }
     }

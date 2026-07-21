@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -27,7 +28,8 @@ import androidx.compose.ui.platform.LocalLocale
 @Composable
 fun TransactionsScreen(
     viewModel: TransactionViewModel = hiltViewModel(),
-    onNavigateToAddTransaction: (String?) -> Unit // Navigation callback
+    onNavigateToAddTransaction: (String?) -> Unit, // Navigation callback
+    onOpenDrawer: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -43,7 +45,12 @@ fun TransactionsScreen(
                     IconButton(onClick = { viewModel.onEvent(TransactionUiEvent.ForceSync) }) {
                         Icon(imageVector = Icons.Default.Refresh, contentDescription = "Sync")
                     }
-                }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onOpenDrawer) {
+                        Icon(imageVector = Icons.Default.Menu, contentDescription = "Open Menu")
+                    }
+                },
             )
         },
         floatingActionButton = {

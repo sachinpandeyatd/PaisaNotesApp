@@ -20,7 +20,9 @@ import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import kotlinx.coroutines.launch
+import java.security.MessageDigest
 import java.security.SecureRandom
+import java.util.UUID
 
 @Composable
 fun LoginScreen(
@@ -81,36 +83,30 @@ fun LoginScreen(
                     try {
                         val credentialManager = CredentialManager.create(context)
 
+                        // Better nonce generation (Base64 URL Safe as recommended)
                         val randomBytes = ByteArray(32)
                         SecureRandom().nextBytes(randomBytes)
                         val hashedNonce = Base64.encodeToString(randomBytes, Base64.NO_WRAP or Base64.URL_SAFE or Base64.NO_PADDING)
 
-                        android.util.Log.d("Auth", "Web Client ID: $webClientId")
-
-                        val googleIdOption = GetGoogleIdOption.Builder()
-                            .setFilterByAuthorizedAccounts(false)
-                            .setServerClientId(webClientId)
-                            .setNonce(hashedNonce)
-                            .setAutoSelectEnabled(false)
-                            .build()
+                        android.util.Log.d("Auth", "Attempting login with Web Client ID: $webClientId")
 
                         val signInWithGoogleOption = GetSignInWithGoogleOption.Builder(webClientId)
                             .setNonce(hashedNonce)
                             .build()
 
                         val request = GetCredentialRequest.Builder()
-                            .addCredentialOption(googleIdOption)
                             .addCredentialOption(signInWithGoogleOption)
                             .build()
-
                         val result = credentialManager.getCredential(context as Activity, request)
-
                         val credential = result.credential
                         if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                             val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
                             viewModel.googleLogin(googleIdTokenCredential.idToken)
+                        } else {
+                            android.util.Log.e("Auth", "Unexpected credential type: ${credential.type}")
                         }
                     } catch (e: Exception) {
+                        android.util.Log.e("Auth", "Credential Manager Error: ${e.message}")
                         e.printStackTrace()
                     }
                 }
