@@ -1,5 +1,7 @@
 package com.paisanotes.data.remote.dto
 
+import com.paisanotes.data.local.entity.SyncStatus
+
 data class TransactionDto(
     val id: String,
     val amount: Double,
@@ -10,6 +12,7 @@ data class TransactionDto(
     val paymentMethod: String,
     val source: String,
     val notes: String?,
+    val categoryId: String?,
     val createdAt: String,
     val updatedAt: String,
     val isDeleted: Boolean
@@ -21,7 +24,8 @@ data class SyncPullResponse(
     val people: List<PersonDto>? = emptyList(),
     val loans: List<LoanDto>? = emptyList(),
     val emis: List<EmiDto>? = emptyList(),
-    val auditLogs: List<AuditLogDto>? = emptyList()
+    val auditLogs: List<AuditLogDto>? = emptyList(),
+    val categories: List<CategoryDto>? = emptyList()
 )
 
 data class PersonDto(
@@ -79,7 +83,8 @@ data class SyncPushRequest(
     val people: List<PersonDto>? = emptyList(),
     val loans: List<LoanDto>? = emptyList(),
     val emis: List<EmiDto>? = emptyList(),
-    val auditLogs: List<AuditLogDto>? = emptyList()
+    val auditLogs: List<AuditLogDto>? = emptyList(),
+    val categories: List<CategoryDto>?
 )
 
 data class SyncPushResponse(
@@ -87,5 +92,19 @@ data class SyncPushResponse(
     val processedPersonIds: List<String> = emptyList(),
     val processedLoanIds: List<String> = emptyList(),
     val processedEmiIds: List<String> = emptyList(),
-    val processedAuditLogIds: List<String> = emptyList()
+    val processedAuditLogIds: List<String> = emptyList(),
+    val processedCategoryIds: List<String>?
+)
+
+data class CategoryDto(
+    val id: String,
+    val name: String,
+    val icon: String,
+    val color: String,
+    val isDefault: Boolean,
+
+    val createdAt: String,
+    val updatedAt: String,
+    val isDeleted: Boolean,
+    val syncStatus: SyncStatus,
 )

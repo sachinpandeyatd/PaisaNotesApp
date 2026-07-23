@@ -20,7 +20,8 @@ fun TransactionEntity.toDomainModel(): Transaction {
         transactionDate = transactionDate,
         paymentMethod = paymentMethod,
         source = source,
-        notes = notes
+        notes = notes,
+        categoryId = categoryId
     )
 }
 
@@ -41,6 +42,7 @@ fun Transaction.toEntity(
         paymentMethod = paymentMethod,
         source = source,
         notes = notes,
+        categoryId = categoryId,
         createdAt = createdAt,
         updatedAt = updatedAt,
         isDeleted = isDeleted,
@@ -65,6 +67,7 @@ fun TransactionDto.toEntity(): TransactionEntity {
         paymentMethod = paymentMethod,
         source = source,
         notes = notes,
+        categoryId = categoryId,
         createdAt = parsedCreated,
         updatedAt = parsedUpdated,
         isDeleted = isDeleted,
@@ -86,6 +89,7 @@ fun TransactionEntity.toDto(): TransactionDto {
         paymentMethod = paymentMethod,
         source = source,
         notes = notes,
+        categoryId = categoryId,
         createdAt = formatter.format(Instant.ofEpochMilli(createdAt)),
         updatedAt = formatter.format(Instant.ofEpochMilli(updatedAt)),
         isDeleted = isDeleted

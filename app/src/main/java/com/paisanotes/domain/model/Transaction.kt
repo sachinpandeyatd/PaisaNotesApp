@@ -9,5 +9,6 @@ data class Transaction(
     val transactionDate: Long, // Epoch Milliseconds for easy UI formatting
     val paymentMethod: String,
     val source: String,
-    val notes: String?
+    val notes: String?,
+    val categoryId: String? = null
 )

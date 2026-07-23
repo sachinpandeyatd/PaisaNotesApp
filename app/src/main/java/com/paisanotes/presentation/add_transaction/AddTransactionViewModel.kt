@@ -4,7 +4,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import com.paisanotes.domain.model.Category
 import com.paisanotes.domain.model.Transaction
+import com.paisanotes.domain.repository.CategoryRepository
 import com.paisanotes.domain.repository.TransactionRepository
 import com.paisanotes.presentation.navigation.AddTransactionRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,13 +24,16 @@ data class AddTransactionState(
     val transactionType: String = "EXPENSE", // Default to Expense
     val notes: String = "",
     val isSaving: Boolean = false,
-    val saveSuccess: Boolean = false
+    val saveSuccess: Boolean = false,
+    val categoryId: String? = null,
+    val categories: List<Category> = emptyList(),
 )
 
 @HiltViewModel
 class AddTransactionViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val repository: TransactionRepository
+    private val repository: TransactionRepository,
+    private val categoryRepository: CategoryRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AddTransactionState())
@@ -41,18 +46,31 @@ class AddTransactionViewModel @Inject constructor(
     fun onNotesChange(value: String) { _state.update { it.copy(notes = value) } }
     fun onTypeChange(type: String) { _state.update { it.copy(transactionType = type) } }
 
+    fun onCategorySelect(category: Category) {
+        _state.update { it.copy(categoryId = category.id, category = category.name) }
+    }
+
     init {
-        // If an ID was passed, we are EDITING! Load the data.
+        // 1. Fetch Categories for the dropdown (Always run this, not just when editing)
+        viewModelScope.launch {
+            categoryRepository.getAllCategories().collect { list ->
+                android.util.Log.d("UI_TEST", "ViewModel loaded ${list.size} categories from Room")
+                _state.update { it.copy(categories = list) }
+            }
+        }
+
+        // 2. If an ID was passed, we are EDITING! Load the transaction data.
         if (transactionId != null) {
             viewModelScope.launch {
-                val existingTxn = repository.getTransactionById(transactionId) // You need to add this to TransactionRepository interface!
+                val existingTxn = repository.getTransactionById(transactionId)
                 if (existingTxn != null) {
                     _state.update {
                         it.copy(
                             amount = existingTxn.amount.toString(),
                             category = existingTxn.category,
                             transactionType = existingTxn.transactionType,
-                            notes = existingTxn.notes ?: ""
+                            notes = existingTxn.notes ?: "",
+                            categoryId = existingTxn.categoryId
                         )
                     }
                 }
@@ -80,7 +98,8 @@ class AddTransactionViewModel @Inject constructor(
                 transactionDate = System.currentTimeMillis(),
                 paymentMethod = "CASH", // Defaulting for now
                 source = "MANUAL",
-                notes = currentState.notes
+                notes = currentState.notes,
+                categoryId = currentState.categoryId
             )
 
             // Save to Room DB!

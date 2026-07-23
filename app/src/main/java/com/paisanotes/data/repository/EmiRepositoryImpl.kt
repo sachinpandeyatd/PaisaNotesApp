@@ -78,13 +78,14 @@ class EmiRepositoryImpl @Inject constructor(
                 transactionType = "INCOME",
                 merchant = null,
                 category = "EMI Repayment",
+                categoryId = null,
                 transactionDate = System.currentTimeMillis(),
                 paymentMethod = "UPI",
                 source = "EMI_AUTO",
                 notes = "Monthly payment for ${entity.itemName}",
                 createdAt = System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis(),
-                syncStatus = SyncStatus.PENDING_INSERT
+                syncStatus = SyncStatus.PENDING_INSERT,
             )
         )
 

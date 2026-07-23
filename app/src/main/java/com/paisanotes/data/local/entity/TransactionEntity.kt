@@ -17,6 +17,7 @@ data class TransactionEntity(
     val paymentMethod: String,
     val source: String,
     val notes: String?,
+    val categoryId: String?,
     
     // Auditing
     val createdAt: Long,

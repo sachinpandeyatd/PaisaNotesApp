@@ -51,7 +51,7 @@ class LoanRepositoryImpl @Inject constructor(
         transactionDao.insertTransaction(
             com.paisanotes.data.local.entity.TransactionEntity(
                 id = txnId, amount = loan.amountLent, transactionType = txnType, merchant = null,
-                category = categoryText, transactionDate = loan.dateGiven,
+                category = categoryText, categoryId = null, transactionDate = loan.dateGiven,
                 paymentMethod = "CASH", source = "FRIEND_LEDGER", notes = loan.notes,
                 createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis(),
                 syncStatus = SyncStatus.PENDING_INSERT
@@ -98,7 +98,7 @@ class LoanRepositoryImpl @Inject constructor(
         transactionDao.insertTransaction(
             TransactionEntity(
                 id = txnId, amount = amount, transactionType = txnType, merchant = null,
-                category = categoryText, transactionDate = System.currentTimeMillis(),
+                category = categoryText, categoryId = null, transactionDate = System.currentTimeMillis(),
                 paymentMethod = "CASH", source = "LOAN_REPAYMENT", notes = "Repayment for Loan",
                 createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis(),
                 syncStatus = SyncStatus.PENDING_INSERT

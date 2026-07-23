@@ -1,18 +1,30 @@
 package com.paisanotes.presentation.add_transaction
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.paisanotes.presentation.util.getCategoryIcon
+import com.paisanotes.presentation.util.parseHexColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -21,6 +33,8 @@ fun AddTransactionScreen(
     onNavigateBack: () -> Unit // Callback to go back to the previous screen
 ) {
     val state by viewModel.state.collectAsState()
+    var showCategorySheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
 
     // This listens for the saveSuccess flag. If it becomes true, we automatically pop the screen!
     LaunchedEffect(state.saveSuccess) {
@@ -80,9 +94,21 @@ fun AddTransactionScreen(
             // Category Field
             OutlinedTextField(
                 value = state.category,
-                onValueChange = viewModel::onCategoryChange,
-                label = { Text("Category (e.g. Food, Rent)") },
-                modifier = Modifier.fillMaxWidth()
+                onValueChange = {}, // Read-only
+                label = { Text("Category") },
+                modifier = Modifier.fillMaxWidth(),
+                readOnly = true,
+                trailingIcon = { Icon(Icons.Default.ArrowDropDown, null) },
+                interactionSource = remember { MutableInteractionSource() }
+                    .also { interactionSource ->
+                        LaunchedEffect(interactionSource) {
+                            interactionSource.interactions.collect {
+                                if (it is androidx.compose.foundation.interaction.PressInteraction.Release) {
+                                    showCategorySheet = true
+                                }
+                            }
+                        }
+                    }
             )
 
             // Notes Field
@@ -105,6 +131,50 @@ fun AddTransactionScreen(
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                 } else {
                     Text("Save Transaction")
+                }
+            }
+        }
+
+        if (showCategorySheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showCategorySheet = false },
+                sheetState = sheetState
+            ) {
+                Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                    Text("Select Category", style = MaterialTheme.typography.titleLarge)
+                    Spacer(Modifier.height(16.dp))
+
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(4), // 4 icons per row
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.padding(bottom = 32.dp)
+                    ) {
+                        items(state.categories) { category ->
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.clickable {
+                                    viewModel.onCategorySelect(category)
+                                    showCategorySheet = false
+                                }
+                            ) {
+                                Surface(
+                                    shape = androidx.compose.foundation.shape.CircleShape,
+                                    color = parseHexColor(category.color).copy(alpha = 0.2f),
+                                    modifier = Modifier.size(56.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = getCategoryIcon(category.icon),
+                                        contentDescription = category.name,
+                                        tint = parseHexColor(category.color),
+                                        modifier = Modifier.padding(12.dp)
+                                    )
+                                }
+                                Spacer(Modifier.height(4.dp))
+                                Text(category.name, style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
                 }
             }
         }
