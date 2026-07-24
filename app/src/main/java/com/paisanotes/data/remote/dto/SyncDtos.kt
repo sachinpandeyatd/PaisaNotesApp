@@ -13,6 +13,8 @@ data class TransactionDto(
     val source: String,
     val notes: String?,
     val categoryId: String?,
+    val accountId: String?,
+    val transferAccountId: String?,
     val createdAt: String,
     val updatedAt: String,
     val isDeleted: Boolean
@@ -26,7 +28,8 @@ data class SyncPullResponse(
     val emis: List<EmiDto>? = emptyList(),
     val auditLogs: List<AuditLogDto>? = emptyList(),
     val categories: List<CategoryDto>? = emptyList(),
-    val budgets: List<BudgetDto>? = emptyList()
+    val budgets: List<BudgetDto>? = emptyList(),
+    val accounts: List<AccountDto>? = emptyList()
 )
 
 data class PersonDto(
@@ -86,7 +89,8 @@ data class SyncPushRequest(
     val emis: List<EmiDto>? = emptyList(),
     val auditLogs: List<AuditLogDto>? = emptyList(),
     val categories: List<CategoryDto>?,
-    val budgets: List<BudgetDto>? = emptyList()
+    val budgets: List<BudgetDto>? = emptyList(),
+    val accounts: List<AccountDto>? = emptyList()
 )
 
 data class SyncPushResponse(
@@ -96,7 +100,8 @@ data class SyncPushResponse(
     val processedEmiIds: List<String> = emptyList(),
     val processedAuditLogIds: List<String> = emptyList(),
     val processedCategoryIds: List<String>?,
-    val processedBudgetIds: List<String>? = emptyList()
+    val processedBudgetIds: List<String>? = emptyList(),
+    val processedAccountIds: List<String>? = emptyList()
 )
 
 data class CategoryDto(
@@ -116,6 +121,16 @@ data class BudgetDto(
     val id: String,
     val categoryId: String,
     val monthlyLimit: Double,
+    val createdAt: String,
+    val updatedAt: String,
+    val isDeleted: Boolean
+)
+
+data class AccountDto(
+    val id: String,
+    val name: String,
+    val type: String, // CASH, SAVINGS, CREDIT_CARD, WALLET
+    val initialBalance: Double,
     val createdAt: String,
     val updatedAt: String,
     val isDeleted: Boolean

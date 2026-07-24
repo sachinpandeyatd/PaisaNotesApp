@@ -1,5 +1,6 @@
 package com.paisanotes.di
 
+import com.paisanotes.data.repository.AccountRepositoryImpl
 import com.paisanotes.data.repository.AuditLogRepositoryImpl
 import com.paisanotes.data.repository.AuthRepositoryImpl
 import com.paisanotes.data.repository.BudgetRepositoryImpl
@@ -9,6 +10,7 @@ import com.paisanotes.data.repository.LoanRepositoryImpl
 import com.paisanotes.data.repository.PersonRepositoryImpl
 import com.paisanotes.data.repository.SyncRepositoryImpl
 import com.paisanotes.data.repository.TransactionRepositoryImpl
+import com.paisanotes.domain.repository.AccountRepository
 import com.paisanotes.domain.repository.AuditLogRepository
 import com.paisanotes.domain.repository.AuthRepository
 import com.paisanotes.domain.repository.BudgetRepository
@@ -63,4 +65,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindBudgetRepository(impl: BudgetRepositoryImpl): BudgetRepository
+
+    @Binds
+    abstract fun bindAccountRepository(impl: AccountRepositoryImpl): AccountRepository
 }

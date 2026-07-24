@@ -3,6 +3,7 @@ package com.paisanotes.di
 import android.content.Context
 import androidx.room.Room
 import com.paisanotes.data.local.PaisaDatabase
+import com.paisanotes.data.local.dao.AccountDao
 import com.paisanotes.data.local.dao.AuditLogDao
 import com.paisanotes.data.local.dao.BudgetDao
 import com.paisanotes.data.local.dao.CategoryDao
@@ -60,4 +61,8 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideBudgetDao(db: PaisaDatabase): BudgetDao = db.budgetDao
+
+    @Provides
+    @Singleton
+    fun provideAccountDao(db: PaisaDatabase): AccountDao = db.accountDao
 }

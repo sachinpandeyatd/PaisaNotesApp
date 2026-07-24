@@ -79,9 +79,13 @@ fun AddTransactionScreen(
                     label = { Text("Income") },
                     colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primaryContainer)
                 )
+                FilterChip(
+                    selected = state.transactionType == "TRANSFER",
+                    onClick = { viewModel.onTypeChange("TRANSFER") },
+                    label = { Text("Transfer") }
+                )
             }
 
-            // Amount Field
             OutlinedTextField(
                 value = state.amount,
                 onValueChange = viewModel::onAmountChange,
@@ -91,25 +95,86 @@ fun AddTransactionScreen(
                 prefix = { Text("₹") }
             )
 
-            // Category Field
-            OutlinedTextField(
-                value = state.category,
-                onValueChange = {}, // Read-only
-                label = { Text("Category") },
-                modifier = Modifier.fillMaxWidth(),
-                readOnly = true,
-                trailingIcon = { Icon(Icons.Default.ArrowDropDown, null) },
-                interactionSource = remember { MutableInteractionSource() }
-                    .also { interactionSource ->
-                        LaunchedEffect(interactionSource) {
-                            interactionSource.interactions.collect {
-                                if (it is androidx.compose.foundation.interaction.PressInteraction.Release) {
-                                    showCategorySheet = true
+            var expandedAccount by remember { mutableStateOf(false) }
+            ExposedDropdownMenuBox(
+                expanded = expandedAccount,
+                onExpandedChange = { expandedAccount = it }
+            ) {
+                OutlinedTextField(
+                    value = state.accountName,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text(if (state.transactionType == "TRANSFER") "From Account" else "Account") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedAccount) },
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedAccount,
+                    onDismissRequest = { expandedAccount = false }
+                ) {
+                    state.accounts.forEach { acc ->
+                        DropdownMenuItem(
+                            text = { Text(acc.name) },
+                            onClick = {
+                                viewModel.onAccountSelect(acc.id, acc.name)
+                                expandedAccount = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            if (state.transactionType == "TRANSFER") {
+                // Show Transfer Destination
+                var expandedTransfer by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(
+                    expanded = expandedTransfer,
+                    onExpandedChange = { expandedTransfer = it }
+                ) {
+                    OutlinedTextField(
+                        value = state.transferAccountName,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("To Account") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedTransfer) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expandedTransfer,
+                        onDismissRequest = { expandedTransfer = false }
+                    ) {
+                        state.accounts.forEach { acc ->
+                            DropdownMenuItem(
+                                text = { Text(acc.name) },
+                                onClick = {
+                                    viewModel.onTransferAccountSelect(acc.id, acc.name)
+                                    expandedTransfer = false
+                                }
+                            )
+                        }
+                    }
+                }
+            } else {
+                // Show Category Field (Your existing code)
+                OutlinedTextField(
+                    value = state.category,
+                    onValueChange = {}, // Read-only
+                    label = { Text("Category") },
+                    modifier = Modifier.fillMaxWidth(),
+                    readOnly = true,
+                    trailingIcon = { Icon(androidx.compose.material.icons.Icons.Default.ArrowDropDown, null) },
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                        .also { interactionSource ->
+                            LaunchedEffect(interactionSource) {
+                                interactionSource.interactions.collect {
+                                    if (it is androidx.compose.foundation.interaction.PressInteraction.Release) {
+                                        showCategorySheet = true
+                                    }
                                 }
                             }
                         }
-                    }
-            )
+                )
+            }
 
             // Notes Field
             OutlinedTextField(
@@ -134,6 +199,7 @@ fun AddTransactionScreen(
                 }
             }
         }
+
 
         if (showCategorySheet) {
             ModalBottomSheet(

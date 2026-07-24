@@ -25,7 +25,8 @@ class SyncRepositoryImpl @Inject constructor(
     private val auditLogDao: AuditLogDao,
     private val categoryDao: CategoryDao,
     private val tokenManager: TokenManager,
-    private val budgetDao: BudgetDao
+    private val budgetDao: BudgetDao,
+    private val accountDao: AccountDao
 ) : SyncRepository {
 
     override suspend fun syncWithServer(): Boolean {
@@ -40,9 +41,11 @@ class SyncRepositoryImpl @Inject constructor(
             val unsyncedLogs = auditLogDao.getUnsyncedLogs()
             val unsyncedCategories = categoryDao.getUnsyncedCategories()
             val unsyncedBudgets = budgetDao.getUnsyncedBudgets()
+            val unsyncedAccounts = accountDao.getUnsyncedAccounts()
 
             if (unsyncedTransactions.isNotEmpty() || unsyncedPeople.isNotEmpty() ||
                 unsyncedLoans.isNotEmpty() || unsyncedEmis.isNotEmpty() ||
+                unsyncedBudgets.isNotEmpty() || unsyncedAccounts.isNotEmpty() ||
                 unsyncedLogs.isNotEmpty() || unsyncedCategories.isNotEmpty()) {
 
                 val pushRequest = SyncPushRequest(
@@ -52,7 +55,8 @@ class SyncRepositoryImpl @Inject constructor(
                     loans = unsyncedLoans.map { it.toDto() },
                     emis = unsyncedEmis.map { it.toDto() },
                     categories = unsyncedCategories.map { it.toDto() },
-                    budgets = unsyncedBudgets.map { it.toDto() }
+                    budgets = unsyncedBudgets.map { it.toDto() },
+                    accounts = unsyncedAccounts.map { it.toDto() }
                 )
 
                 val pushResponse = api.pushData(pushRequest)
@@ -66,6 +70,7 @@ class SyncRepositoryImpl @Inject constructor(
                     if (body.processedEmiIds.isNotEmpty()) emiDao.markAsSynced(body.processedEmiIds)
                     if (!body.processedCategoryIds.isNullOrEmpty()) categoryDao.markAsSynced(body.processedCategoryIds)
                     if (!body.processedBudgetIds.isNullOrEmpty()) budgetDao.markAsSynced(body.processedBudgetIds)
+                    if (!body.processedAccountIds.isNullOrEmpty()) accountDao.markAsSynced(body.processedAccountIds)
                 }
             }
 
@@ -78,8 +83,6 @@ class SyncRepositoryImpl @Inject constructor(
             if (pullResponse.isSuccessful && pullResponse.body() != null) {
                 val pullBody = pullResponse.body()!!
 
-                android.util.Log.d("SYNC_TEST", "Categories received: ${pullBody.categories?.size}")
-
                 // Update the app's watermark clock to the Server's clock
                 tokenManager.saveLastSyncTime(pullBody.serverTimestamp)
 
@@ -91,6 +94,7 @@ class SyncRepositoryImpl @Inject constructor(
                 if (!pullBody.emis.isNullOrEmpty()) emiDao.insertEmis(pullBody.emis.map { it.toEntity() })
                 if (!pullBody.categories.isNullOrEmpty()) categoryDao.insertCategories(pullBody.categories.map { it.toEntity() })
                 if (!pullBody.budgets.isNullOrEmpty()) budgetDao.insertBudgets(pullBody.budgets.map { it.toEntity() })
+                if (!pullBody.accounts.isNullOrEmpty()) accountDao.insertAccounts(pullBody.accounts.map { it.toEntity() })
             }
 
             true

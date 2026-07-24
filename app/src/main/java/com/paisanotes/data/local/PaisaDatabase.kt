@@ -2,6 +2,7 @@ package com.paisanotes.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import com.paisanotes.data.local.dao.AccountDao
 import com.paisanotes.data.local.dao.AuditLogDao
 import com.paisanotes.data.local.dao.BudgetDao
 import com.paisanotes.data.local.dao.CategoryDao
@@ -9,6 +10,7 @@ import com.paisanotes.data.local.dao.EmiDao
 import com.paisanotes.data.local.dao.LoanDao
 import com.paisanotes.data.local.dao.PersonDao
 import com.paisanotes.data.local.dao.TransactionDao
+import com.paisanotes.data.local.entity.AccountEntity
 import com.paisanotes.data.local.entity.AuditLogEntity
 import com.paisanotes.data.local.entity.BudgetEntity
 import com.paisanotes.data.local.entity.CategoryEntity
@@ -25,9 +27,10 @@ import com.paisanotes.data.local.entity.TransactionEntity
         LoanEntity::class,
         AuditLogEntity::class,
         CategoryEntity::class,
-        BudgetEntity::class
+        BudgetEntity::class,
+        AccountEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 abstract class PaisaDatabase : RoomDatabase() {
@@ -38,4 +41,5 @@ abstract class PaisaDatabase : RoomDatabase() {
     abstract val auditLogDao : AuditLogDao
     abstract val categoryDao: CategoryDao
     abstract val budgetDao: BudgetDao
+    abstract val accountDao: AccountDao
 }

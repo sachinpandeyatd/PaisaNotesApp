@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -21,6 +22,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.paisanotes.presentation.accounts.AccountsScreen
 import com.paisanotes.presentation.add_emi.AddEmiScreen
 import com.paisanotes.presentation.add_loan.AddLoanScreen
 import com.paisanotes.presentation.add_transaction.AddTransactionScreen
@@ -54,7 +56,8 @@ fun MainScreen(
             currentDestination?.hasRoute(AddEmiRoute::class) == true ||
             currentDestination?.hasRoute(SettingsRoute::class) == true ||
             currentDestination?.hasRoute(ForgotPasswordRoute::class) == true ||
-            currentDestination?.hasRoute(BudgetsRoute::class) == true
+            currentDestination?.hasRoute(BudgetsRoute::class) == true ||
+            currentDestination?.hasRoute(AccountsRoute::class) == true
 
     // 🚨 WRAP EVERYTHING IN THE DRAWER
     ModalNavigationDrawer(
@@ -87,16 +90,18 @@ fun MainScreen(
                     },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
+
                 NavigationDrawerItem(
-                    icon = { Icon(androidx.compose.material.icons.Icons.Default.Settings, contentDescription = "Settings") },
-                    label = { Text("Settings") },
+                    icon = { Icon(androidx.compose.material.icons.Icons.Default.AccountBalance, contentDescription = "Account Balance") },
+                    label = { Text("Accounts") },
                     selected = false,
                     onClick = {
                         coroutineScope.launch { drawerState.close() }
-                        navController.navigate(SettingsRoute)
+                        navController.navigate(AccountsRoute)
                     },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
+
                 NavigationDrawerItem(
                     icon = { Icon(androidx.compose.material.icons.Icons.Default.PieChart, "Budgets") },
                     label = { Text("Budgets") },
@@ -104,6 +109,17 @@ fun MainScreen(
                     onClick = {
                         coroutineScope.launch { drawerState.close() }
                         navController.navigate(BudgetsRoute)
+                    },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+
+                NavigationDrawerItem(
+                    icon = { Icon(androidx.compose.material.icons.Icons.Default.Settings, contentDescription = "Settings") },
+                    label = { Text("Settings") },
+                    selected = false,
+                    onClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        navController.navigate(SettingsRoute)
                     },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
@@ -213,6 +229,11 @@ fun MainScreen(
                 }
                 composable<BudgetsRoute> {
                     com.paisanotes.presentation.budgets.BudgetsScreen(
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
+                    )
+                }
+                composable<AccountsRoute> {
+                    AccountsScreen(
                         onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
                     )
                 }

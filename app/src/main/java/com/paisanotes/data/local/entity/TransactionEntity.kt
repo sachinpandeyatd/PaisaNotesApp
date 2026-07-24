@@ -18,6 +18,8 @@ data class TransactionEntity(
     val source: String,
     val notes: String?,
     val categoryId: String?,
+    val accountId: String? = null,
+    val transferAccountId: String? = null,
     
     // Auditing
     val createdAt: Long,
