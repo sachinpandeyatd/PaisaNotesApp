@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -52,7 +53,8 @@ fun MainScreen(
             currentDestination?.hasRoute(AddLoanRoute::class) == true ||
             currentDestination?.hasRoute(AddEmiRoute::class) == true ||
             currentDestination?.hasRoute(SettingsRoute::class) == true ||
-            currentDestination?.hasRoute(ForgotPasswordRoute::class) == true
+            currentDestination?.hasRoute(ForgotPasswordRoute::class) == true ||
+            currentDestination?.hasRoute(BudgetsRoute::class) == true
 
     // 🚨 WRAP EVERYTHING IN THE DRAWER
     ModalNavigationDrawer(
@@ -92,6 +94,16 @@ fun MainScreen(
                     onClick = {
                         coroutineScope.launch { drawerState.close() }
                         navController.navigate(SettingsRoute)
+                    },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+                NavigationDrawerItem(
+                    icon = { Icon(androidx.compose.material.icons.Icons.Default.PieChart, "Budgets") },
+                    label = { Text("Budgets") },
+                    selected = false,
+                    onClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        navController.navigate(BudgetsRoute)
                     },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
@@ -198,6 +210,11 @@ fun MainScreen(
 
                 composable<ForgotPasswordRoute> {
                     ForgotPasswordScreen(onNavigateBack = { navController.popBackStack() })
+                }
+                composable<BudgetsRoute> {
+                    com.paisanotes.presentation.budgets.BudgetsScreen(
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
+                    )
                 }
             }
         }

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.paisanotes.data.local.PaisaDatabase
 import com.paisanotes.data.local.dao.AuditLogDao
+import com.paisanotes.data.local.dao.BudgetDao
 import com.paisanotes.data.local.dao.CategoryDao
 import com.paisanotes.data.local.dao.EmiDao
 import com.paisanotes.data.local.dao.LoanDao
@@ -55,4 +56,8 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideCategoryDao(database: PaisaDatabase): CategoryDao = database.categoryDao
+
+    @Provides
+    @Singleton
+    fun provideBudgetDao(db: PaisaDatabase): BudgetDao = db.budgetDao
 }

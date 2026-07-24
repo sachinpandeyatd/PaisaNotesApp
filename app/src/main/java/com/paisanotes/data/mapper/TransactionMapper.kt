@@ -17,11 +17,11 @@ fun TransactionEntity.toDomainModel(): Transaction {
         transactionType = transactionType,
         merchant = merchant,
         category = category,
+        categoryId = categoryId,
         transactionDate = transactionDate,
         paymentMethod = paymentMethod,
         source = source,
-        notes = notes,
-        categoryId = categoryId
+        notes = notes
     )
 }
 
@@ -38,11 +38,11 @@ fun Transaction.toEntity(
         transactionType = transactionType,
         merchant = merchant,
         category = category,
+        categoryId = categoryId,
         transactionDate = transactionDate,
         paymentMethod = paymentMethod,
         source = source,
         notes = notes,
-        categoryId = categoryId,
         createdAt = createdAt,
         updatedAt = updatedAt,
         isDeleted = isDeleted,

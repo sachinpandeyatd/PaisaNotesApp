@@ -102,6 +102,7 @@ class AddTransactionViewModel @Inject constructor(
                 categoryId = currentState.categoryId
             )
 
+            android.util.Log.d("BUDGET_DEBUG", "Saving Txn: Amount=${transaction.amount}, Type=${transaction.transactionType}, CatID=${transaction.categoryId}, Date=${transaction.transactionDate}")
             // Save to Room DB!
             repository.saveTransaction(transaction)
 

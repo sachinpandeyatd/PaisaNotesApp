@@ -24,7 +24,8 @@ class SyncRepositoryImpl @Inject constructor(
     private val emiDao: EmiDao,
     private val auditLogDao: AuditLogDao,
     private val categoryDao: CategoryDao,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val budgetDao: BudgetDao
 ) : SyncRepository {
 
     override suspend fun syncWithServer(): Boolean {
@@ -38,6 +39,7 @@ class SyncRepositoryImpl @Inject constructor(
             val unsyncedEmis = emiDao.getUnsyncedEmis()
             val unsyncedLogs = auditLogDao.getUnsyncedLogs()
             val unsyncedCategories = categoryDao.getUnsyncedCategories()
+            val unsyncedBudgets = budgetDao.getUnsyncedBudgets()
 
             if (unsyncedTransactions.isNotEmpty() || unsyncedPeople.isNotEmpty() ||
                 unsyncedLoans.isNotEmpty() || unsyncedEmis.isNotEmpty() ||
@@ -49,7 +51,8 @@ class SyncRepositoryImpl @Inject constructor(
                     people = unsyncedPeople.map { it.toDto() },
                     loans = unsyncedLoans.map { it.toDto() },
                     emis = unsyncedEmis.map { it.toDto() },
-                    categories = unsyncedCategories.map { it.toDto() }
+                    categories = unsyncedCategories.map { it.toDto() },
+                    budgets = unsyncedBudgets.map { it.toDto() }
                 )
 
                 val pushResponse = api.pushData(pushRequest)
@@ -62,6 +65,7 @@ class SyncRepositoryImpl @Inject constructor(
                     if (body.processedLoanIds.isNotEmpty()) loanDao.markAsSynced(body.processedLoanIds)
                     if (body.processedEmiIds.isNotEmpty()) emiDao.markAsSynced(body.processedEmiIds)
                     if (!body.processedCategoryIds.isNullOrEmpty()) categoryDao.markAsSynced(body.processedCategoryIds)
+                    if (!body.processedBudgetIds.isNullOrEmpty()) budgetDao.markAsSynced(body.processedBudgetIds)
                 }
             }
 
@@ -86,6 +90,7 @@ class SyncRepositoryImpl @Inject constructor(
                 if (!pullBody.loans.isNullOrEmpty()) loanDao.insertLoans(pullBody.loans.map { it.toEntity() })
                 if (!pullBody.emis.isNullOrEmpty()) emiDao.insertEmis(pullBody.emis.map { it.toEntity() })
                 if (!pullBody.categories.isNullOrEmpty()) categoryDao.insertCategories(pullBody.categories.map { it.toEntity() })
+                if (!pullBody.budgets.isNullOrEmpty()) budgetDao.insertBudgets(pullBody.budgets.map { it.toEntity() })
             }
 
             true

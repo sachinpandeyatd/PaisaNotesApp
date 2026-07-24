@@ -25,7 +25,8 @@ data class SyncPullResponse(
     val loans: List<LoanDto>? = emptyList(),
     val emis: List<EmiDto>? = emptyList(),
     val auditLogs: List<AuditLogDto>? = emptyList(),
-    val categories: List<CategoryDto>? = emptyList()
+    val categories: List<CategoryDto>? = emptyList(),
+    val budgets: List<BudgetDto>? = emptyList()
 )
 
 data class PersonDto(
@@ -84,7 +85,8 @@ data class SyncPushRequest(
     val loans: List<LoanDto>? = emptyList(),
     val emis: List<EmiDto>? = emptyList(),
     val auditLogs: List<AuditLogDto>? = emptyList(),
-    val categories: List<CategoryDto>?
+    val categories: List<CategoryDto>?,
+    val budgets: List<BudgetDto>? = emptyList()
 )
 
 data class SyncPushResponse(
@@ -93,7 +95,8 @@ data class SyncPushResponse(
     val processedLoanIds: List<String> = emptyList(),
     val processedEmiIds: List<String> = emptyList(),
     val processedAuditLogIds: List<String> = emptyList(),
-    val processedCategoryIds: List<String>?
+    val processedCategoryIds: List<String>?,
+    val processedBudgetIds: List<String>? = emptyList()
 )
 
 data class CategoryDto(
@@ -107,4 +110,13 @@ data class CategoryDto(
     val updatedAt: String,
     val isDeleted: Boolean,
     val syncStatus: SyncStatus,
+)
+
+data class BudgetDto(
+    val id: String,
+    val categoryId: String,
+    val monthlyLimit: Double,
+    val createdAt: String,
+    val updatedAt: String,
+    val isDeleted: Boolean
 )
