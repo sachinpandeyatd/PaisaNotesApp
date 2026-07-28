@@ -36,6 +36,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.compose.ui.platform.LocalLocale
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -259,31 +261,35 @@ fun LoansList(loans: List<Loan>) {
 }
 
 @Composable
-fun EmisList(emis: List<Emi>, onRecordEmiPayment: (String) -> Unit) {
+fun EmisList(emis: List<Emi>, onRecordEmiPayment: (String, Double, String) -> Unit) {
+    var selectedEmi by remember { mutableStateOf<Emi?>(null) }
+    var paymentAmount by remember { mutableStateOf("") }
+    var selectedMonth by remember { mutableStateOf("") }
+
     if (emis.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No EMIs added yet.")
-        }
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("No EMIs found.") }
     } else {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(emis, key = { it.id }) { emi ->
                 val formatter = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
-
                 ListItem(
                     headlineContent = { Text(emi.itemName, fontWeight = FontWeight.Bold) },
                     supportingContent = {
-                        // Show Monthly Amount + Progress (e.g., Paid: 2/12)
-                        Text("${formatter.format(emi.monthlyEmiAmount)} / month  •  Paid: ${emi.completedMonths}/${emi.totalMonths}")
+                        Column {
+                            Text("${formatter.format(emi.monthlyEmiAmount)} / month  •  Paid: ${emi.completedMonths}/${emi.totalMonths}")
+                            // Show total progress
+                            Text("Total Paid: ${formatter.format(emi.amountPaid)} of ${formatter.format(emi.totalAmountWithInterest)}", style = MaterialTheme.typography.labelSmall)
+                        }
                     },
                     trailingContent = {
                         if (emi.status == "ACTIVE") {
-                            // NO DIALOG NEEDED! Just click Pay and it records 1 month instantly.
-                            Button(
-                                onClick = { onRecordEmiPayment(emi.id) },
-                                contentPadding = PaddingValues(horizontal = 8.dp)
-                            ) {
-                                Text("Pay")
-                            }
+                            Button(onClick = {
+                                selectedEmi = emi
+                                paymentAmount = emi.monthlyEmiAmount.toString() // 🚨 PRE-FILL EXPECTED AMOUNT!
+
+                                // 🚨 PRE-FILL CURRENT MONTH
+                                selectedMonth = LocalDate.now().format(DateTimeFormatter.ofPattern("MMM yyyy"))
+                            }) { Text("Pay") }
                         } else {
                             Badge(containerColor = MaterialTheme.colorScheme.primary) { Text("CLOSED") }
                         }
@@ -292,5 +298,40 @@ fun EmisList(emis: List<Emi>, onRecordEmiPayment: (String) -> Unit) {
                 )
             }
         }
+    }
+
+    // --- PAYMENT DIALOG ---
+    if (selectedEmi != null) {
+        AlertDialog(
+            onDismissRequest = { selectedEmi = null },
+            title = { Text("Record EMI Payment") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    OutlinedTextField(
+                        value = paymentAmount,
+                        onValueChange = { paymentAmount = it },
+                        label = { Text("Amount Paid") },
+                        prefix = { Text("₹") },
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = selectedMonth,
+                        onValueChange = { selectedMonth = it },
+                        label = { Text("For Month (e.g. Jul 2026)") },
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val amt = paymentAmount.toDoubleOrNull()
+                    if (amt != null && amt > 0 && selectedMonth.isNotBlank()) {
+                        onRecordEmiPayment(selectedEmi!!.id, amt, selectedMonth)
+                        selectedEmi = null
+                    }
+                }) { Text("Confirm") }
+            },
+            dismissButton = { TextButton(onClick = { selectedEmi = null }) { Text("Cancel") } }
+        )
     }
 }

@@ -21,6 +21,9 @@ data class AddEmiState(
     val principal: String = "",
     val monthlyAmount: String = "",
     val totalMonths: String = "",
+    val refNumber: String = "",
+    val totalAmountWithInterest: String = "",
+    val interestRate: String = "",
     val isSaving: Boolean = false,
     val saveSuccess: Boolean = false
 )
@@ -38,26 +41,35 @@ class AddEmiViewModel @Inject constructor(
     fun onPrincipalChange(v: String) { _state.update { it.copy(principal = v) } }
     fun onMonthlyAmountChange(v: String) { _state.update { it.copy(monthlyAmount = v) } }
     fun onTotalMonthsChange(v: String) { _state.update { it.copy(totalMonths = v) } }
+    fun onRefNumberChange(v: String) { _state.update { it.copy(refNumber = v) } }
+    fun onTotalAmountWithInterestChange(v: String) { _state.update { it.copy(totalAmountWithInterest = v) } }
+    fun onInterestRateChange(v: String) { _state.update { it.copy(interestRate = v) } }
 
     fun saveEmi() {
         val s = _state.value
         val pAmount = s.principal.toDoubleOrNull()
         val mAmount = s.monthlyAmount.toDoubleOrNull()
         val tMonths = s.totalMonths.toIntOrNull()
+        val totalAmt = s.totalAmountWithInterest.toDoubleOrNull() ?: pAmount // Default to Principal if blank
+        val intRate = s.interestRate.toDoubleOrNull()
 
-        if (pAmount == null || mAmount == null || tMonths == null || s.itemName.isBlank()) return
+        if (pAmount == null || mAmount == null || tMonths == null || totalAmt == null || s.itemName.isBlank()) return
 
         viewModelScope.launch {
             _state.update { it.copy(isSaving = true) }
             val emi = Emi(
                 id = UUID.randomUUID().toString(),
                 personId = personId,
-                refNumber = null,
+                refNumber = s.refNumber.takeIf { it.isNotBlank() },
                 itemName = s.itemName,
                 ownerType = if (personId == null) "ME" else "FRIEND",
                 principalAmount = pAmount,
                 monthlyEmiAmount = mAmount,
                 totalMonths = tMonths,
+                totalAmountWithInterest = totalAmt,
+                interestRate = intRate,
+                amountPaid = 0.0,
+                completedMonths = 0,
                 startDate = System.currentTimeMillis(),
                 status = "ACTIVE"
             )

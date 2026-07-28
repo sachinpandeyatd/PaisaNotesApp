@@ -16,6 +16,9 @@ data class EmiEntity(
     val monthlyEmiAmount: Double,
     val totalMonths: Int,
     val completedMonths: Int = 0,
+    val totalAmountWithInterest: Double = 0.0,
+    val interestRate: Double? = null,
+    val amountPaid: Double = 0.0,
     val startDate: Long,
     val status: String = "ACTIVE", // "ACTIVE" or "CLOSED"
 

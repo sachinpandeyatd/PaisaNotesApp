@@ -57,42 +57,42 @@ class EmiRepositoryImpl @Inject constructor(
         triggerBackgroundSync()
     }
 
-    override suspend fun recordEmiPayment(emiId: String) {
+    override suspend fun recordEmiPayment(emiId: String, amount: Double, monthName: String) {
         val entity = dao.getEmiById(emiId) ?: return
 
         val newCompleted = entity.completedMonths + 1
-        val status = if (newCompleted >= entity.totalMonths) "CLOSED" else "ACTIVE"
+        val newAmountPaid = entity.amountPaid + amount
 
-        // 1. Update EMI
+        // Close it if the amount is fully paid OR if the months are done
+        val status = if (newAmountPaid >= entity.totalAmountWithInterest || newCompleted >= entity.totalMonths) "CLOSED" else "ACTIVE"
+
         dao.updateEmi(entity.copy(
-            completedMonths = newCompleted, status = status,
-            updatedAt = System.currentTimeMillis(), syncStatus = SyncStatus.PENDING_UPDATE
+            completedMonths = newCompleted,
+            amountPaid = newAmountPaid,
+            status = status,
+            updatedAt = System.currentTimeMillis(),
+            syncStatus = SyncStatus.PENDING_UPDATE
         ))
 
-        // 2. Add an INCOME transaction automatically
-        val txnId = UUID.randomUUID().toString()
+        // 🚨 DYNAMIC LEDGER ENTRY
+        val txnType = if (entity.ownerType == "ME") "EXPENSE" else "INCOME"
+        val refText = if (!entity.refNumber.isNullOrBlank()) " (Ref: ${entity.refNumber})" else ""
+        val txnId = java.util.UUID.randomUUID().toString()
+
         transactionDao.insertTransaction(
-            TransactionEntity(
-                id = txnId,
-                amount = entity.monthlyEmiAmount,
-                transactionType = "INCOME",
-                merchant = null,
-                category = "EMI Repayment",
-                categoryId = null,
-                transactionDate = System.currentTimeMillis(),
-                paymentMethod = "UPI",
-                source = "EMI_AUTO",
-                notes = "Monthly payment for ${entity.itemName}",
-                createdAt = System.currentTimeMillis(),
-                updatedAt = System.currentTimeMillis(),
-                syncStatus = SyncStatus.PENDING_INSERT,
+            com.paisanotes.data.local.entity.TransactionEntity(
+                id = txnId, amount = amount, transactionType = txnType, merchant = null,
+                category = "EMI Repayment", categoryId = null, accountId = null, transferAccountId = null,
+                transactionDate = System.currentTimeMillis(), paymentMethod = "UPI", source = "EMI_AUTO",
+                notes = "EMI: $monthName$refText", // e.g., "EMI: July 2026 (Ref: HDFC123)"
+                createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis(),
+                syncStatus = SyncStatus.PENDING_INSERT
             )
         )
 
-        // 3. Create Audit Logs
-        val logMetadata = """{"completedMonths": $newCompleted, "status": "$status"}"""
-        auditLogDao.insertLog(AuditLogEntity(entityType = "EMI", entityId = emiId, actionType = "UPDATE", metadata = logMetadata))
-        auditLogDao.insertLog(AuditLogEntity(entityType = "TRANSACTION", entityId = txnId, actionType = "CREATE", metadata = """{"amount": ${entity.monthlyEmiAmount}}"""))
+        // 🚨 AUDIT LOGS
+        val logMetadata = """{"amountPaid": $amount, "totalPaid": $newAmountPaid, "month": "$monthName"}"""
+        auditLogDao.insertLog(com.paisanotes.data.local.entity.AuditLogEntity(entityType = "EMI", entityId = emiId, actionType = "UPDATE", metadata = logMetadata))
 
         triggerBackgroundSync()
     }

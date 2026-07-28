@@ -26,7 +26,7 @@ fun AddEmiScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add Proxy EMI") },
+                title = { Text("Add EMI") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                 }
@@ -44,6 +44,24 @@ fun AddEmiScreen(
             OutlinedTextField(
                 value = state.principal, onValueChange = viewModel::onPrincipalChange,
                 label = { Text("Total Principal (₹)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = state.totalAmountWithInterest, onValueChange = viewModel::onTotalAmountWithInterestChange,
+                label = { Text("Total Amount (including all taxes and interest) (₹)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = state.interestRate, onValueChange = viewModel::onInterestRateChange,
+                label = { Text("Interest Rate (%)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = state.refNumber, onValueChange = viewModel::onRefNumberChange,
+                label = { Text("EMI Reference Number") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth()
             )

@@ -13,6 +13,9 @@ fun EmiEntity.toDomainModel() = Emi(
     ownerType = ownerType, principalAmount = principalAmount,
     monthlyEmiAmount = monthlyEmiAmount, totalMonths = totalMonths,
     completedMonths = completedMonths,
+    totalAmountWithInterest = totalAmountWithInterest,
+    interestRate = interestRate,
+    amountPaid = amountPaid,
     startDate = startDate, status = status
 )
 
@@ -21,6 +24,9 @@ fun Emi.toEntity() = EmiEntity(
     ownerType = ownerType, principalAmount = principalAmount,
     monthlyEmiAmount = monthlyEmiAmount, totalMonths = totalMonths,
     completedMonths = completedMonths,
+    totalAmountWithInterest = totalAmountWithInterest,
+    interestRate = interestRate,
+    amountPaid = amountPaid,
     startDate = startDate, status = status,
     createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis()
 )
@@ -37,6 +43,9 @@ fun EmiEntity.toDto(): EmiDto {
         monthlyEmiAmount = monthlyEmiAmount,
         totalMonths = totalMonths,
         completedMonths = completedMonths,
+        totalAmountWithInterest = totalAmountWithInterest,
+        interestRate = interestRate,
+        amountPaid = amountPaid,
         startDate = formatter.format(Instant.ofEpochMilli(startDate)),
         status = status,
         createdAt = formatter.format(Instant.ofEpochMilli(createdAt)),
@@ -56,6 +65,9 @@ fun com.paisanotes.data.remote.dto.EmiDto.toEntity(): EmiEntity {
         monthlyEmiAmount = monthlyEmiAmount,
         totalMonths = totalMonths,
         completedMonths = completedMonths,
+        totalAmountWithInterest = totalAmountWithInterest,
+        interestRate = interestRate,
+        amountPaid = amountPaid,
         startDate = java.time.ZonedDateTime.parse(startDate + "T00:00:00Z").toInstant().toEpochMilli(),
         status = status,
         createdAt = java.time.ZonedDateTime.parse(createdAt).toInstant().toEpochMilli(),

@@ -29,9 +29,9 @@ class MyEmisViewModel @Inject constructor(
         }
     }
 
-    fun recordEmiPayment(emiId: String) {
+    fun recordEmiPayment(emiId: String, amount: Double, monthName: String) {
         viewModelScope.launch {
-            emiRepository.recordEmiPayment(emiId)
+            emiRepository.recordEmiPayment(emiId, amount, monthName)
         }
     }
 }

@@ -30,7 +30,7 @@ import com.paisanotes.data.local.entity.TransactionEntity
         BudgetEntity::class,
         AccountEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = false
 )
 abstract class PaisaDatabase : RoomDatabase() {
