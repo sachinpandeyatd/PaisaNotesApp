@@ -1,5 +1,11 @@
 package com.paisanotes.data.repository
 
+import android.content.Context
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.paisanotes.data.local.PaisaDatabase
 import com.paisanotes.data.local.TokenManager
 import com.paisanotes.data.remote.api.PaisaApiService
@@ -9,6 +15,8 @@ import com.paisanotes.data.remote.dto.LoginRequest
 import com.paisanotes.data.remote.dto.RegisterRequest
 import com.paisanotes.data.remote.dto.ResetPasswordRequest
 import com.paisanotes.domain.repository.AuthRepository
+import com.paisanotes.worker.SyncWorker
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -16,7 +24,8 @@ import javax.inject.Inject
 class AuthRepositoryImpl @Inject constructor(
     private val api: PaisaApiService,
     private val tokenManager: TokenManager,
-    private val database: PaisaDatabase
+    private val database: PaisaDatabase,
+    @ApplicationContext private val context: Context
 ) : AuthRepository {
 
     override suspend fun login(request: LoginRequest): Result<Unit> {
@@ -26,6 +35,7 @@ class AuthRepositoryImpl @Inject constructor(
                 if (response.isSuccessful && response.body() != null) {
                     val authResponse = response.body()!!
                     tokenManager.saveToken(authResponse.token) // SAVE JWT!
+                    triggerBackgroundSync()
                     Result.success(Unit)
                 } else {
                     Result.failure(Exception("Invalid email or password"))
@@ -43,6 +53,7 @@ class AuthRepositoryImpl @Inject constructor(
                 if (response.isSuccessful && response.body() != null) {
                     val authResponse = response.body()!!
                     tokenManager.saveToken(authResponse.token) // SAVE JWT!
+                    triggerBackgroundSync()
                     Result.success(Unit)
                 } else {
                     Result.failure(Exception("Registration failed. Email might exist."))
@@ -73,6 +84,7 @@ class AuthRepositoryImpl @Inject constructor(
                 if (response.isSuccessful && response.body() != null) {
                     val authResponse = response.body()!!
                     tokenManager.saveToken(authResponse.token) // SAVE JWT!
+                    triggerBackgroundSync()
                     Result.success(Unit)
                 } else {
                     Result.failure(Exception("Google Sign-In rejected by server"))
@@ -99,5 +111,11 @@ class AuthRepositoryImpl @Inject constructor(
                 if (response.isSuccessful) Result.success(Unit) else Result.failure(Exception("Invalid or Expired OTP"))
             } catch (e: Exception) { Result.failure(Exception("Network error")) }
         }
+    }
+
+    private fun triggerBackgroundSync() {
+        val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+        val syncWorkRequest = OneTimeWorkRequestBuilder<SyncWorker>().setConstraints(constraints).build()
+        WorkManager.getInstance(context).enqueueUniqueWork("paisa_sync_work", ExistingWorkPolicy.REPLACE, syncWorkRequest)
     }
 }
