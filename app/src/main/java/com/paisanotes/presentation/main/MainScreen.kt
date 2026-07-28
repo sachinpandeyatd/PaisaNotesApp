@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -57,7 +58,8 @@ fun MainScreen(
             currentDestination?.hasRoute(SettingsRoute::class) == true ||
             currentDestination?.hasRoute(ForgotPasswordRoute::class) == true ||
             currentDestination?.hasRoute(BudgetsRoute::class) == true ||
-            currentDestination?.hasRoute(AccountsRoute::class) == true
+            currentDestination?.hasRoute(AccountsRoute::class) == true ||
+            currentDestination?.hasRoute(MyEmisRoute::class) == true
 
     // 🚨 WRAP EVERYTHING IN THE DRAWER
     ModalNavigationDrawer(
@@ -75,18 +77,13 @@ fun MainScreen(
                 HorizontalDivider()
                 Spacer(Modifier.height(16.dp))
 
-                // LOGOUT BUTTON
                 NavigationDrawerItem(
-                    icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout") },
-                    label = { Text("Logout") },
+                    icon = { Icon(androidx.compose.material.icons.Icons.Default.DateRange, "My EMIs") },
+                    label = { Text("My EMIs") },
                     selected = false,
                     onClick = {
                         coroutineScope.launch { drawerState.close() }
-                        viewModel.logout()
-                        // Route back to login and DESTROY the backstack
-                        navController.navigate(LoginRoute) {
-                            popUpTo(0) { inclusive = true }
-                        }
+                        navController.navigate(MyEmisRoute)
                     },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
@@ -120,6 +117,22 @@ fun MainScreen(
                     onClick = {
                         coroutineScope.launch { drawerState.close() }
                         navController.navigate(SettingsRoute)
+                    },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+
+                // LOGOUT BUTTON
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout") },
+                    label = { Text("Logout") },
+                    selected = false,
+                    onClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        viewModel.logout()
+                        // Route back to login and DESTROY the backstack
+                        navController.navigate(LoginRoute) {
+                            popUpTo(0) { inclusive = true }
+                        }
                     },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
@@ -235,6 +248,12 @@ fun MainScreen(
                 composable<AccountsRoute> {
                     AccountsScreen(
                         onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
+                    )
+                }
+                composable<MyEmisRoute> {
+                    com.paisanotes.presentation.my_emis.MyEmisScreen(
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } },
+                        onNavigateToAddEmi = { navController.navigate(AddEmiRoute(personId = null)) }
                     )
                 }
             }

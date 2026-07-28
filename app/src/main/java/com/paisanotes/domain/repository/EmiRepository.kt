@@ -7,4 +7,7 @@ interface EmiRepository {
     fun getEmisForPerson(personId: String): Flow<List<Emi>>
     suspend fun saveEmi(emi: Emi)
     suspend fun recordEmiPayment(emiId: String)
+
+    fun getMyEmis(): Flow<List<Emi>>
+
 }

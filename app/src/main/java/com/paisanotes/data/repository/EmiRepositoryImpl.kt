@@ -96,4 +96,8 @@ class EmiRepositoryImpl @Inject constructor(
 
         triggerBackgroundSync()
     }
+
+    override fun getMyEmis(): Flow<List<Emi>> {
+        return dao.getMyEmis().map { list -> list.map { it.toDomainModel() } }
+    }
 }

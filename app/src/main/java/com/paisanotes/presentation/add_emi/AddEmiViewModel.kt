@@ -30,7 +30,7 @@ class AddEmiViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: EmiRepository
 ) : ViewModel() {
-    private val personId: String = savedStateHandle.toRoute<AddEmiRoute>().personId
+    private val personId: String? = savedStateHandle.toRoute<AddEmiRoute>().personId
     private val _state = MutableStateFlow(AddEmiState())
     val state: StateFlow<AddEmiState> = _state.asStateFlow()
 
@@ -54,7 +54,7 @@ class AddEmiViewModel @Inject constructor(
                 personId = personId,
                 refNumber = null,
                 itemName = s.itemName,
-                ownerType = "FRIEND", // We are adding this FOR a friend
+                ownerType = if (personId == null) "ME" else "FRIEND",
                 principalAmount = pAmount,
                 monthlyEmiAmount = mAmount,
                 totalMonths = tMonths,

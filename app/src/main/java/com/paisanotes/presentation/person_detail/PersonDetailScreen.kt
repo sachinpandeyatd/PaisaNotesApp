@@ -262,7 +262,7 @@ fun LoansList(loans: List<Loan>) {
 fun EmisList(emis: List<Emi>, onRecordEmiPayment: (String) -> Unit) {
     if (emis.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No proxy EMIs linked to this person.")
+            Text("No EMIs added yet.")
         }
     } else {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

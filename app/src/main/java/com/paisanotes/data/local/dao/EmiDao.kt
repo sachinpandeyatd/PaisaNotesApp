@@ -33,4 +33,7 @@ interface EmiDao {
 
     @Query("SELECT * FROM emis WHERE id = :id")
     suspend fun getEmiById(id: String): EmiEntity?
+
+    @Query("SELECT * FROM emis WHERE ownerType = 'ME' AND isDeleted = 0 ORDER BY startDate DESC")
+    fun getMyEmis(): Flow<List<EmiEntity>>
 }
