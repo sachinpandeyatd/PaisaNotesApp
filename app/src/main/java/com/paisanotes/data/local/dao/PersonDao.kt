@@ -40,7 +40,7 @@ interface PersonDao {
                      END
                  ) FROM loans WHERE personId = p.id AND isDeleted = 0), 0.0) 
                  +
-                 COALESCE((SELECT SUM(principalAmount) FROM emis WHERE personId = p.id AND status = 'ACTIVE' AND isDeleted = 0), 0.0)
+                 COALESCE((SELECT SUM(totalAmountWithInterest - amountPaid) FROM emis WHERE personId = p.id AND status = 'ACTIVE' AND isDeleted = 0), 0.0)
                ) AS totalExposure
         FROM people p
         WHERE p.isDeleted = 0
