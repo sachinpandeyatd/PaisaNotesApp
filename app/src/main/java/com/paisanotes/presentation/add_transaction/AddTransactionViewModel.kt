@@ -25,6 +25,7 @@ data class AddTransactionState(
     val category: String = "",
     val transactionType: String = "EXPENSE", // Default to Expense
     val notes: String = "",
+    val isEditing: Boolean = false,
     val isSaving: Boolean = false,
     val saveSuccess: Boolean = false,
     val categoryId: String? = null,
@@ -74,6 +75,7 @@ class AddTransactionViewModel @Inject constructor(
             accountRepository.getAccountsWithBalances().collect { list ->
                 _state.update {
                     it.copy(
+                        isEditing = true,
                         accounts = list,
                         accountId = it.accountId ?: list.firstOrNull()?.id,
                         accountName = it.accountName.ifBlank { list.firstOrNull()?.name ?: "" }
@@ -138,6 +140,19 @@ class AddTransactionViewModel @Inject constructor(
 
             // Trigger navigation back to the list
             _state.update { it.copy(isSaving = false, saveSuccess = true) }
+        }
+    }
+
+    fun deleteTransaction() {
+        if (transactionId == null) return
+
+        viewModelScope.launch {
+            _state.update { it.copy(isSaving = true) }
+
+            // This calls our repository method which ALSO generates the "DELETE" Audit Log!
+            repository.deleteTransaction(transactionId)
+
+            _state.update { it.copy(isSaving = false, saveSuccess = true) } // Triggers navigation back
         }
     }
 }
