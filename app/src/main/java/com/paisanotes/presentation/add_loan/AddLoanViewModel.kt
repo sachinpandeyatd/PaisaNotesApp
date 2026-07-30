@@ -21,6 +21,7 @@ data class AddLoanState(
     val type: String = "LENT",
     val amount: String = "",
     val notes: String = "",
+    val isEditing: Boolean = false,
     val isSaving: Boolean = false,
     val saveSuccess: Boolean = false
 )
@@ -31,10 +32,30 @@ class AddLoanViewModel @Inject constructor(
     private val repository: LoanRepository
 ) : ViewModel() {
 
-    private val personId: String = savedStateHandle.toRoute<AddLoanRoute>().personId
+    private val route = savedStateHandle.toRoute<AddLoanRoute>()
+    private val personId: String = route.personId
+    private val loanId: String? = route.loanId
 
     private val _state = MutableStateFlow(AddLoanState())
     val state: StateFlow<AddLoanState> = _state.asStateFlow()
+
+    init {
+        if (loanId != null) {
+            viewModelScope.launch {
+                val existingLoan = repository.getLoanById(loanId)
+                if (existingLoan != null) {
+                    _state.update {
+                        it.copy(
+                            isEditing = true,
+                            type = existingLoan.type,
+                            amount = existingLoan.amountLent.toString(),
+                            notes = existingLoan.notes ?: ""
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     fun onAmountChange(value: String) { _state.update { it.copy(amount = value) } }
     fun onNotesChange(value: String) { _state.update { it.copy(notes = value) } }
@@ -47,7 +68,7 @@ class AddLoanViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isSaving = true) }
             val loan = Loan(
-                id = UUID.randomUUID().toString(),
+                id = loanId ?: UUID.randomUUID().toString(),
                 personId = personId,
                 type = _state.value.type,
                 amountLent = parsedAmount,
@@ -58,6 +79,15 @@ class AddLoanViewModel @Inject constructor(
                 amountRepaid = 0.0,
             )
             repository.saveLoan(loan) // Saves to Room!
+            _state.update { it.copy(isSaving = false, saveSuccess = true) }
+        }
+    }
+
+    fun deleteLoan() {
+        if (loanId == null) return
+        viewModelScope.launch {
+            _state.update { it.copy(isSaving = true) }
+            repository.deleteLoan(loanId)
             _state.update { it.copy(isSaving = false, saveSuccess = true) }
         }
     }

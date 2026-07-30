@@ -44,7 +44,7 @@ import java.time.format.DateTimeFormatter
 fun PersonDetailScreen(
     viewModel: PersonDetailViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
-    onNavigateToAddLoan: (String) -> Unit,
+    onNavigateToAddLoan: (String, String?) -> Unit,
     onNavigateToAddEmi: (String) -> Unit
 ) {
     val state by viewModel.state.collectAsState()
@@ -128,7 +128,12 @@ fun PersonDetailScreen(
             ) { page ->
                 when (page) {
                     0 -> LoansList(
-                        loans = state.loans
+                        loans = state.loans,
+                        onEditLoan = { loanId ->
+                            state.person?.id?.let { personId ->
+                                onNavigateToAddLoan(personId, loanId)
+                            }
+                        }
                     )
                     1 -> EmisList(
                         emis = state.proxyEmis,
@@ -154,7 +159,7 @@ fun PersonDetailScreen(
                             modifier = Modifier.clickable {
                                 showBottomSheet = false
                                 // Trigger navigation to Loan Form
-                                state.person?.id?.let { onNavigateToAddLoan(it) }
+                                state.person?.id?.let { onNavigateToAddLoan(it, null) }
                             }
                         )
                         Divider()
@@ -217,7 +222,7 @@ fun ExposureHeader(totalExposure: Double, phone: String?) {
 }
 
 @Composable
-fun LoansList(loans: List<Loan>) {
+fun LoansList(loans: List<Loan>, onEditLoan: (String) -> Unit) {
     if (loans.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("No history with this person yet.")
@@ -237,6 +242,7 @@ fun LoansList(loans: List<Loan>) {
                 val sign = if (isLent) "-" else "+"
 
                 ListItem(
+                    modifier = Modifier.clickable { onEditLoan(entry.id) },
                     headlineContent = { Text(headlineText, fontWeight = FontWeight.Bold, color = amountColor) },
                     supportingContent = {
                         Column {

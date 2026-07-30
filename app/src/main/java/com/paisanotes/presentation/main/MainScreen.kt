@@ -194,7 +194,7 @@ fun MainScreen(
                 composable<TransactionsRoute> {
                     TransactionsScreen(
                         onNavigateToAddTransaction = { id -> navController.navigate(AddTransactionRoute(id)) },
-                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } } // 🚨 PASS DRAWER CALLBACK
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
                     )
                 }
 
@@ -202,7 +202,7 @@ fun MainScreen(
                 composable<PeopleRoute> {
                     PeopleScreen(
                         onNavigateToPersonDetail = { id -> navController.navigate(PersonDetailRoute(id)) },
-                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } } // 🚨 PASS DRAWER CALLBACK
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
                     )
                 }
 
@@ -210,7 +210,9 @@ fun MainScreen(
                 composable<PersonDetailRoute> {
                     PersonDetailScreen(
                         onNavigateBack = { navController.popBackStack() },
-                        onNavigateToAddLoan = { id -> navController.navigate(AddLoanRoute(id)) },
+                        onNavigateToAddLoan = { personId, loanId ->
+                            navController.navigate(AddLoanRoute(personId, loanId))
+                        },
                         onNavigateToAddEmi = { id -> navController.navigate(AddEmiRoute(id)) }
                     )
                 }

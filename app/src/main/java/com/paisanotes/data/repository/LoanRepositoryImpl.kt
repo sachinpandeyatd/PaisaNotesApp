@@ -40,23 +40,71 @@ class LoanRepositoryImpl @Inject constructor(
         return dao.getLoansByPerson(personId).map { list -> list.map { it.toDomainModel() } }
     }
 
+    override suspend fun getLoanById(id: String): Loan? {
+        return dao.getLoanById(id)?.toDomainModel()
+    }
+
+    override suspend fun deleteLoan(id: String) {
+        val entity = dao.getLoanById(id) ?: return
+
+        dao.updateLoan(entity.copy(
+            isDeleted = true,
+            updatedAt = System.currentTimeMillis(),
+            syncStatus = SyncStatus.PENDING_DELETE
+        ))
+
+        val metadataJson = """{"amount": ${entity.amountLent}, "type": "${entity.type}"}"""
+        auditLogDao.insertLog(AuditLogEntity(entityType = "LOAN", entityId = id, actionType = "DELETE", metadata = metadataJson))
+        triggerBackgroundSync()
+    }
+
     override suspend fun saveLoan(loan: Loan) {
-        val entity = loan.toEntity().copy(syncStatus = SyncStatus.PENDING_INSERT)
+        val existingEntity = dao.getLoanById(loan.id)
+        val actionType = if (existingEntity == null) "CREATE" else "UPDATE"
+
+        val entity = if (existingEntity == null) {
+            loan.toEntity(syncStatus = SyncStatus.PENDING_INSERT)
+        } else {
+            loan.toEntity(
+                syncStatus = SyncStatus.PENDING_UPDATE,
+                createdAt = existingEntity.createdAt,
+                updatedAt = System.currentTimeMillis()
+            )
+        }
         dao.insertLoan(entity)
 
-        val txnType = if (loan.type == "LENT") "EXPENSE" else "INCOME"
-        val categoryText = if (loan.type == "LENT") "Given to Friend" else "Received from Friend"
-        val txnId = java.util.UUID.randomUUID().toString()
+        if (existingEntity == null) {
+            val txnType = if (loan.type == "LENT") "EXPENSE" else "INCOME"
+            val categoryText =
+                if (loan.type == "LENT") "Given to Friend" else "Received from Friend"
+            val txnId = java.util.UUID.randomUUID().toString()
 
-        transactionDao.insertTransaction(
-            com.paisanotes.data.local.entity.TransactionEntity(
-                id = txnId, amount = loan.amountLent, transactionType = txnType, merchant = null,
-                category = categoryText, categoryId = null, transactionDate = loan.dateGiven,
-                paymentMethod = "CASH", source = "FRIEND_LEDGER", notes = loan.notes,
-                createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis(),
-                syncStatus = SyncStatus.PENDING_INSERT
+            transactionDao.insertTransaction(
+                com.paisanotes.data.local.entity.TransactionEntity(
+                    id = txnId,
+                    amount = loan.amountLent,
+                    transactionType = txnType,
+                    merchant = null,
+                    category = categoryText,
+                    categoryId = null,
+                    transactionDate = loan.dateGiven,
+                    paymentMethod = "CASH",
+                    source = "FRIEND_LEDGER",
+                    notes = loan.notes,
+                    createdAt = System.currentTimeMillis(),
+                    updatedAt = System.currentTimeMillis(),
+                    syncStatus = SyncStatus.PENDING_INSERT
+                )
             )
-        )
+            auditLogDao.insertLog(
+                AuditLogEntity(
+                    entityType = "TRANSACTION",
+                    entityId = txnId,
+                    actionType = "CREATE",
+                    metadata = """{"amount": ${loan.amountLent}}"""
+                )
+            )
+        }
 
         val metadataJson = """{"amount": ${loan.amountLent}, "type": "${loan.type}"}"""
 
@@ -65,12 +113,6 @@ class LoanRepositoryImpl @Inject constructor(
             entityId = loan.id,
             actionType = "CREATE",
             metadata = metadataJson)
-        )
-        auditLogDao.insertLog(AuditLogEntity(
-            entityType = "TRANSACTION",
-            entityId = txnId,
-            actionType = "CREATE",
-            metadata = """{"amount": ${loan.amountLent}}""")
         )
 
         triggerBackgroundSync()
