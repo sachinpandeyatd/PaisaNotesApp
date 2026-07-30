@@ -29,7 +29,7 @@ data object PeopleRoute
 data class AddLoanRoute(val personId: String, val loanId: String? = null)
 
 @Serializable
-data class AddEmiRoute(val personId: String? = null)
+data class AddEmiRoute(val personId: String? = null, val emiId: String? = null)
 
 // Add this below LoginRoute
 @Serializable

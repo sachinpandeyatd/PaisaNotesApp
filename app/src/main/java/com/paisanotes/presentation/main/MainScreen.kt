@@ -30,6 +30,7 @@ import com.paisanotes.presentation.add_transaction.AddTransactionScreen
 import com.paisanotes.presentation.auth.ForgotPasswordScreen
 import com.paisanotes.presentation.auth.LoginScreen
 import com.paisanotes.presentation.auth.RegisterScreen
+import com.paisanotes.presentation.my_emis.MyEmisScreen
 import com.paisanotes.presentation.navigation.*
 import com.paisanotes.presentation.people.PeopleScreen
 import com.paisanotes.presentation.person_detail.PersonDetailScreen
@@ -213,7 +214,9 @@ fun MainScreen(
                         onNavigateToAddLoan = { personId, loanId ->
                             navController.navigate(AddLoanRoute(personId, loanId))
                         },
-                        onNavigateToAddEmi = { id -> navController.navigate(AddEmiRoute(id)) }
+                        onNavigateToAddEmi = { personId, emiId ->
+                            navController.navigate(AddEmiRoute(personId, emiId))
+                        }
                     )
                 }
                 composable<AddTransactionRoute> { AddTransactionScreen(onNavigateBack = { navController.popBackStack() }) }
@@ -253,9 +256,11 @@ fun MainScreen(
                     )
                 }
                 composable<MyEmisRoute> {
-                    com.paisanotes.presentation.my_emis.MyEmisScreen(
+                    MyEmisScreen(
                         onOpenDrawer = { coroutineScope.launch { drawerState.open() } },
-                        onNavigateToAddEmi = { navController.navigate(AddEmiRoute(personId = null)) }
+                        onNavigateToAddEmi = { emiId ->
+                            navController.navigate(AddEmiRoute(personId = null, emiId = emiId))
+                        }
                     )
                 }
             }

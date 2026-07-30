@@ -45,7 +45,7 @@ fun PersonDetailScreen(
     viewModel: PersonDetailViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
     onNavigateToAddLoan: (String, String?) -> Unit,
-    onNavigateToAddEmi: (String) -> Unit
+    onNavigateToAddEmi: (String, String?) -> Unit
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -137,7 +137,12 @@ fun PersonDetailScreen(
                     )
                     1 -> EmisList(
                         emis = state.proxyEmis,
-                        onRecordEmiPayment = viewModel::recordEmiPayment
+                        onRecordEmiPayment = viewModel::recordEmiPayment,
+                        onEditEmi = { emiId ->
+                            state.person?.id?.let { personId ->
+                                onNavigateToAddEmi(personId, emiId) // 🚨 Pass both IDs
+                            }
+                        }
                     )
                 }
             }
@@ -168,7 +173,7 @@ fun PersonDetailScreen(
                             supportingContent = { Text("You bought something for them using your card.") },
                             modifier = Modifier.clickable {
                                 showBottomSheet = false
-                                state.person?.id?.let { onNavigateToAddEmi(it) }
+                                state.person?.id?.let { onNavigateToAddEmi(it, null) }
                             }
                         )
                     }
@@ -267,7 +272,7 @@ fun LoansList(loans: List<Loan>, onEditLoan: (String) -> Unit) {
 }
 
 @Composable
-fun EmisList(emis: List<Emi>, onRecordEmiPayment: (String, Double, String) -> Unit) {
+fun EmisList(emis: List<Emi>, onRecordEmiPayment: (String, Double, String) -> Unit, onEditEmi: (String) -> Unit) {
     var selectedEmi by remember { mutableStateOf<Emi?>(null) }
     var paymentAmount by remember { mutableStateOf("") }
     var selectedMonth by remember { mutableStateOf("") }
@@ -279,6 +284,7 @@ fun EmisList(emis: List<Emi>, onRecordEmiPayment: (String, Double, String) -> Un
             items(emis, key = { it.id }) { emi ->
                 val formatter = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
                 ListItem(
+                    modifier = Modifier.clickable { onEditEmi(emi.id) },
                     headlineContent = { Text(emi.itemName, fontWeight = FontWeight.Bold) },
                     supportingContent = {
                         Column {

@@ -19,16 +19,29 @@ fun EmiEntity.toDomainModel() = Emi(
     startDate = startDate, status = status
 )
 
-fun Emi.toEntity() = EmiEntity(
-    id = id, personId = personId, refNumber = refNumber, itemName = itemName,
-    ownerType = ownerType, principalAmount = principalAmount,
-    monthlyEmiAmount = monthlyEmiAmount, totalMonths = totalMonths,
+fun Emi.toEntity(
+    syncStatus: SyncStatus = SyncStatus.PENDING_INSERT,
+    createdAt: Long = System.currentTimeMillis(),
+    updatedAt: Long = System.currentTimeMillis()
+) = EmiEntity(
+    id = id,
+    personId = personId,
+    refNumber = refNumber,
+    itemName = itemName,
+    ownerType = ownerType,
+    principalAmount = principalAmount,
+    monthlyEmiAmount = monthlyEmiAmount,
+    totalMonths = totalMonths,
     completedMonths = completedMonths,
     totalAmountWithInterest = totalAmountWithInterest,
     interestRate = interestRate,
     amountPaid = amountPaid,
-    startDate = startDate, status = status,
-    createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis()
+    startDate = startDate,
+    status = status,
+
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+    syncStatus = syncStatus
 )
 
 fun EmiEntity.toDto(): EmiDto {

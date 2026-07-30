@@ -24,6 +24,7 @@ data class AddEmiState(
     val refNumber: String = "",
     val totalAmountWithInterest: String = "",
     val interestRate: String = "",
+    val isEditing: Boolean = false,
     val isSaving: Boolean = false,
     val saveSuccess: Boolean = false
 )
@@ -33,9 +34,34 @@ class AddEmiViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: EmiRepository
 ) : ViewModel() {
-    private val personId: String? = savedStateHandle.toRoute<AddEmiRoute>().personId
     private val _state = MutableStateFlow(AddEmiState())
     val state: StateFlow<AddEmiState> = _state.asStateFlow()
+
+    private val route = savedStateHandle.toRoute<AddEmiRoute>()
+    private val personId: String? = route.personId
+    private val emiId: String? = route.emiId
+
+    init {
+        if (emiId != null) {
+            viewModelScope.launch {
+                val existingEmi = repository.getEmiById(emiId)
+                if (existingEmi != null) {
+                    _state.update {
+                        it.copy(
+                            isEditing = true,
+                            itemName = existingEmi.itemName,
+                            principal = existingEmi.principalAmount.toString(),
+                            monthlyAmount = existingEmi.monthlyEmiAmount.toString(),
+                            totalMonths = existingEmi.totalMonths.toString(),
+                            refNumber = existingEmi.refNumber ?: "",
+                            totalAmountWithInterest = existingEmi.totalAmountWithInterest.toString(),
+                            interestRate = existingEmi.interestRate?.toString() ?: ""
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     fun onItemNameChange(v: String) { _state.update { it.copy(itemName = v) } }
     fun onPrincipalChange(v: String) { _state.update { it.copy(principal = v) } }
@@ -58,7 +84,7 @@ class AddEmiViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isSaving = true) }
             val emi = Emi(
-                id = UUID.randomUUID().toString(),
+                id = emiId ?: UUID.randomUUID().toString(),
                 personId = personId,
                 refNumber = s.refNumber.takeIf { it.isNotBlank() },
                 itemName = s.itemName,
@@ -74,6 +100,15 @@ class AddEmiViewModel @Inject constructor(
                 status = "ACTIVE"
             )
             repository.saveEmi(emi)
+            _state.update { it.copy(isSaving = false, saveSuccess = true) }
+        }
+    }
+
+    fun deleteEmi() {
+        if (emiId == null) return
+        viewModelScope.launch {
+            _state.update { it.copy(isSaving = true) }
+            repository.deleteEmi(emiId)
             _state.update { it.copy(isSaving = false, saveSuccess = true) }
         }
     }

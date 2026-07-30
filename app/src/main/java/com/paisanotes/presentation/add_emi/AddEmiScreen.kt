@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -26,9 +27,14 @@ fun AddEmiScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add EMI") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                title = { Text(if (state.isEditing) "Edit EMI" else "Add EMI") },
+                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                actions = {
+                    if (state.isEditing) {
+                        IconButton(onClick = viewModel::deleteEmi) {
+                            Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
                 }
             )
         }
@@ -39,7 +45,8 @@ fun AddEmiScreen(
         ) {
             OutlinedTextField(
                 value = state.itemName, onValueChange = viewModel::onItemNameChange,
-                label = { Text("Item Name (e.g., iPhone 15)") }, modifier = Modifier.fillMaxWidth()
+                label = { Text("Item Name (e.g., iPhone 15)") },
+                modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = state.principal, onValueChange = viewModel::onPrincipalChange,
@@ -62,7 +69,6 @@ fun AddEmiScreen(
             OutlinedTextField(
                 value = state.refNumber, onValueChange = viewModel::onRefNumberChange,
                 label = { Text("EMI Reference Number") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth()
             )
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {

@@ -41,18 +41,22 @@ class EmiRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveEmi(emi: Emi) {
-        val entity = emi.toEntity().copy(syncStatus = SyncStatus.PENDING_INSERT)
+        val existingEntity = dao.getEmiById(emi.id)
+        val actionType = if (existingEntity == null) "CREATE" else "UPDATE"
+
+        val entity = if (existingEntity == null) {
+            emi.toEntity(syncStatus = SyncStatus.PENDING_INSERT)
+        } else {
+            emi.toEntity(
+                syncStatus = SyncStatus.PENDING_UPDATE,
+                createdAt = existingEntity.createdAt,
+                updatedAt = System.currentTimeMillis()
+            )
+        }
         dao.insertEmi(entity)
 
-        // 🚨 CREATE AUDIT LOG
         val metadataJson = """{"itemName": "${emi.itemName}", "principal": ${emi.principalAmount}, "monthly": ${emi.monthlyEmiAmount}}"""
-        val auditLog = AuditLogEntity(
-            entityType = "EMI",
-            entityId = emi.id,
-            actionType = "CREATE",
-            metadata = metadataJson
-        )
-        auditLogDao.insertLog(auditLog)
+        auditLogDao.insertLog(com.paisanotes.data.local.entity.AuditLogEntity(entityType = "EMI", entityId = emi.id, actionType = actionType, metadata = metadataJson))
 
         triggerBackgroundSync()
     }
@@ -90,7 +94,6 @@ class EmiRepositoryImpl @Inject constructor(
             )
         )
 
-        // 🚨 AUDIT LOGS
         val logMetadata = """{"amountPaid": $amount, "totalPaid": $newAmountPaid, "month": "$monthName"}"""
         auditLogDao.insertLog(com.paisanotes.data.local.entity.AuditLogEntity(entityType = "EMI", entityId = emiId, actionType = "UPDATE", metadata = logMetadata))
 
@@ -99,5 +102,23 @@ class EmiRepositoryImpl @Inject constructor(
 
     override fun getMyEmis(): Flow<List<Emi>> {
         return dao.getMyEmis().map { list -> list.map { it.toDomainModel() } }
+    }
+
+    override suspend fun getEmiById(id: String): Emi? {
+        return dao.getEmiById(id)?.toDomainModel()
+    }
+
+    override suspend fun deleteEmi(id: String) {
+        val entity = dao.getEmiById(id) ?: return
+
+        dao.updateEmi(entity.copy(
+            isDeleted = true,
+            updatedAt = System.currentTimeMillis(),
+            syncStatus = SyncStatus.PENDING_DELETE
+        ))
+
+        val metadataJson = """{"itemName": "${entity.itemName}", "principal": ${entity.principalAmount}}"""
+        auditLogDao.insertLog(com.paisanotes.data.local.entity.AuditLogEntity(entityType = "EMI", entityId = id, actionType = "DELETE", metadata = metadataJson))
+        triggerBackgroundSync()
     }
 }

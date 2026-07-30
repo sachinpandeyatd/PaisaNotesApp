@@ -10,4 +10,7 @@ interface EmiRepository {
 
     fun getMyEmis(): Flow<List<Emi>>
 
+    suspend fun getEmiById(id: String): Emi?
+    suspend fun deleteEmi(id: String)
+
 }

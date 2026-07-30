@@ -19,7 +19,7 @@ import com.paisanotes.presentation.person_detail.EmisList
 fun MyEmisScreen(
     viewModel: MyEmisViewModel = hiltViewModel(),
     onOpenDrawer: () -> Unit,
-    onNavigateToAddEmi: () -> Unit
+    onNavigateToAddEmi: (String?) -> Unit
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -32,15 +32,27 @@ fun MyEmisScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onNavigateToAddEmi) { Icon(Icons.Default.Add, "Add EMI") }
+            FloatingActionButton(
+                onClick = {
+                    onNavigateToAddEmi(null)
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add EMI"
+                )
+            }
         }
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             if (state.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
-                // Call the list we already built!
-                EmisList(emis = state.emis, onRecordEmiPayment = viewModel::recordEmiPayment)
+                EmisList(
+                    emis = state.emis,
+                    onRecordEmiPayment = viewModel::recordEmiPayment,
+                    onEditEmi = { emiId -> onNavigateToAddEmi(emiId) }
+                )
             }
         }
     }
