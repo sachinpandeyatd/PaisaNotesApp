@@ -219,7 +219,20 @@ fun MainScreen(
                         }
                     )
                 }
-                composable<AddTransactionRoute> { AddTransactionScreen(onNavigateBack = { navController.popBackStack() }) }
+                composable<AddTransactionRoute> {
+                    AddTransactionScreen(onNavigateBack = {
+                        // Check if there's a screen beneath us
+                        if (navController.previousBackStackEntry != null) {
+                            navController.popBackStack()
+                        } else {
+                            // We opened from the Widget! Go to Dashboard.
+                            navController.navigate(HomeRoute) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }
+                    })
+                }
+
                 composable<AddLoanRoute> { AddLoanScreen(onNavigateBack = { navController.popBackStack() }) }
                 composable<AddEmiRoute> { AddEmiScreen(onNavigateBack = { navController.popBackStack() }) }
                 composable<SettingsRoute> {
