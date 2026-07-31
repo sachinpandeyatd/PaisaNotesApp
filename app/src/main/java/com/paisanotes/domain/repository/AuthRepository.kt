@@ -9,7 +9,7 @@ interface AuthRepository {
     fun isLoggedIn(): Boolean
     suspend fun logout()
     suspend fun googleLogin(idToken: String): Result<Unit>
-
     suspend fun forgotPassword(email: String): Result<Unit>
     suspend fun resetPassword(email: String, otp: String, newPassword: String): Result<Unit>
+    suspend fun deleteAccount(): Result<Unit>
 }

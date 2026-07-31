@@ -118,4 +118,21 @@ class AuthRepositoryImpl @Inject constructor(
         val syncWorkRequest = OneTimeWorkRequestBuilder<SyncWorker>().setConstraints(constraints).build()
         WorkManager.getInstance(context).enqueueUniqueWork("paisa_sync_work", ExistingWorkPolicy.REPLACE, syncWorkRequest)
     }
+
+    override suspend fun deleteAccount(): Result<Unit> {
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val response = api.deleteAccount()
+                if (response.isSuccessful) {
+                    // WIPE LOCAL DB & TOKEN!
+                    logout()
+                    Result.success(Unit)
+                } else {
+                    Result.failure(Exception("Failed to delete account on server."))
+                }
+            } catch (e: Exception) {
+                Result.failure(Exception("Network error. Please try again."))
+            }
+        }
+    }
 }

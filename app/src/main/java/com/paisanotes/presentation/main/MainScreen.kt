@@ -224,7 +224,13 @@ fun MainScreen(
                 composable<AddEmiRoute> { AddEmiScreen(onNavigateBack = { navController.popBackStack() }) }
                 composable<SettingsRoute> {
                     com.paisanotes.presentation.settings.SettingsScreen(
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = { navController.popBackStack() },
+                        onAccountDeleted = {
+                            // Wipe backstack and go to Login
+                            navController.navigate(LoginRoute) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }
                     )
                 }
 

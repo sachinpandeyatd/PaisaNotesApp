@@ -43,4 +43,7 @@ interface PaisaApiService {
 
     @POST("api/v1/auth/reset-password")
     suspend fun resetPassword(@Body request: ResetPasswordRequest): Response<Unit>
+
+    @retrofit2.http.DELETE("api/v1/auth/account")
+    suspend fun deleteAccount(): retrofit2.Response<Unit>
 }
