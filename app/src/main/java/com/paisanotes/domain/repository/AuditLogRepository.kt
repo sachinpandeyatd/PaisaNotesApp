@@ -5,4 +5,6 @@ import kotlinx.coroutines.flow.Flow
 
 interface AuditLogRepository {
     fun getAllLogs(): Flow<List<AuditLog>>
+
+    fun getLogsForEntity(entityId: String): Flow<List<AuditLog>>
 }

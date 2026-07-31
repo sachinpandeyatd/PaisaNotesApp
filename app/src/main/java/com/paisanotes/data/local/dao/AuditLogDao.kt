@@ -23,4 +23,7 @@ interface AuditLogDao {
 
     @Query("UPDATE audit_logs SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
     suspend fun markAsSynced(ids: List<String>)
+
+    @Query("SELECT * FROM audit_logs WHERE entityId = :entityId ORDER BY createdAt DESC")
+    fun getLogsForEntity(entityId: String): Flow<List<AuditLogEntity>>
 }

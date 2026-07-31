@@ -17,4 +17,8 @@ class AuditLogRepositoryImpl @Inject constructor(
             entities.map { it.toDomainModel() }
         }
     }
+
+    override fun getLogsForEntity(entityId: String): Flow<List<AuditLog>> {
+        return dao.getLogsForEntity(entityId).map { entities -> entities.map { it.toDomainModel() } }
+    }
 }

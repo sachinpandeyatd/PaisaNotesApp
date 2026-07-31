@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -36,6 +37,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.compose.ui.platform.LocalLocale
+import com.paisanotes.domain.model.AuditLog
+import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -140,9 +143,10 @@ fun PersonDetailScreen(
                         onRecordEmiPayment = viewModel::recordEmiPayment,
                         onEditEmi = { emiId ->
                             state.person?.id?.let { personId ->
-                                onNavigateToAddEmi(personId, emiId) // 🚨 Pass both IDs
+                                onNavigateToAddEmi(personId, emiId)
                             }
-                        }
+                        },
+                        getEmiHistory = viewModel::getEmiHistory
                     )
                 }
             }
@@ -271,11 +275,15 @@ fun LoansList(loans: List<Loan>, onEditLoan: (String) -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EmisList(emis: List<Emi>, onRecordEmiPayment: (String, Double, String) -> Unit, onEditEmi: (String) -> Unit) {
+fun EmisList(emis: List<Emi>, onRecordEmiPayment: (String, Double, String) -> Unit, onEditEmi: (String) -> Unit, getEmiHistory: (String) -> Flow<List<AuditLog>>) {
     var selectedEmi by remember { mutableStateOf<Emi?>(null) }
     var paymentAmount by remember { mutableStateOf("") }
     var selectedMonth by remember { mutableStateOf("") }
+
+    var historyEmiId by remember { mutableStateOf<String?>(null) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     if (emis.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("No EMIs found.") }
@@ -294,16 +302,20 @@ fun EmisList(emis: List<Emi>, onRecordEmiPayment: (String, Double, String) -> Un
                         }
                     },
                     trailingContent = {
-                        if (emi.status == "ACTIVE") {
-                            Button(onClick = {
-                                selectedEmi = emi
-                                paymentAmount = emi.monthlyEmiAmount.toString() // 🚨 PRE-FILL EXPECTED AMOUNT!
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { historyEmiId = emi.id }) {
+                                Icon(Icons.Default.History, contentDescription = "View History", tint = MaterialTheme.colorScheme.primary)
+                            }
 
-                                // 🚨 PRE-FILL CURRENT MONTH
-                                selectedMonth = LocalDate.now().format(DateTimeFormatter.ofPattern("MMM yyyy"))
-                            }) { Text("Pay") }
-                        } else {
-                            Badge(containerColor = MaterialTheme.colorScheme.primary) { Text("CLOSED") }
+                            if (emi.status == "ACTIVE") {
+                                Button(onClick = {
+                                    selectedEmi = emi
+                                    paymentAmount = emi.monthlyEmiAmount.toString()
+                                    selectedMonth = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("MMM yyyy"))
+                                }) { Text("Pay") }
+                            } else {
+                                Badge(containerColor = MaterialTheme.colorScheme.primary) { Text("CLOSED") }
+                            }
                         }
                     },
                     colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest)
@@ -345,5 +357,62 @@ fun EmisList(emis: List<Emi>, onRecordEmiPayment: (String, Double, String) -> Un
             },
             dismissButton = { TextButton(onClick = { selectedEmi = null }) { Text("Cancel") } }
         )
+    }
+
+    // --- REPAYMENT HISTORY BOTTOM SHEET ---
+    if (historyEmiId != null) {
+        // Collect the Flow specifically for the selected EMI
+        val historyFlow = remember(historyEmiId) { getEmiHistory(historyEmiId!!) }
+        val historyLogs by historyFlow.collectAsState(initial = emptyList())
+
+        ModalBottomSheet(onDismissRequest = { historyEmiId = null }, sheetState = sheetState) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp).padding(bottom = 32.dp)) {
+                Text("Repayment History", style = MaterialTheme.typography.titleLarge)
+                Spacer(Modifier.height(16.dp))
+
+                // Filter out creation/edits and only show actual Repayments (logs containing "month")
+                val repaymentLogs = historyLogs.filter { it.metadata.containsKey("month") }
+
+                if (repaymentLogs.isEmpty()) {
+                    Text("No payments recorded yet.", modifier = Modifier.padding(16.dp))
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(repaymentLogs, key = { it.id }) { log ->
+                            val formatter = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
+                            val sdf =
+                                SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
+
+                            // Safely extract the JSON metadata
+                            val monthStr = log.metadata["month"]?.toString() ?: "Unknown"
+                            val amtStr =
+                                log.metadata["amountPaid"]?.toString()?.toDoubleOrNull() ?: 0.0
+
+                            ListItem(
+                                headlineContent = {
+                                    Text(
+                                        monthStr,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                },
+                                supportingContent = {
+                                    Text(
+                                        "Recorded on: ${sdf.format(Date(log.createdAt))}",
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                },
+                                trailingContent = {
+                                    Text(
+                                        "+ ${formatter.format(amtStr)}",
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                },
+                                colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }

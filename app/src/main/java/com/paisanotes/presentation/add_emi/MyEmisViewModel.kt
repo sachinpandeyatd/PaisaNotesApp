@@ -2,7 +2,9 @@ package com.paisanotes.presentation.add_emi
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.paisanotes.domain.model.AuditLog
 import com.paisanotes.domain.model.Emi
+import com.paisanotes.domain.repository.AuditLogRepository
 import com.paisanotes.domain.repository.EmiRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -16,7 +18,8 @@ data class MyEmisState(
 
 @HiltViewModel
 class MyEmisViewModel @Inject constructor(
-    private val emiRepository: EmiRepository
+    private val emiRepository: EmiRepository,
+    private val auditLogRepository: AuditLogRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(MyEmisState())
     val state: StateFlow<MyEmisState> = _state.asStateFlow()
@@ -33,5 +36,9 @@ class MyEmisViewModel @Inject constructor(
         viewModelScope.launch {
             emiRepository.recordEmiPayment(emiId, amount, monthName)
         }
+    }
+
+    fun getEmiHistory(emiId: String): Flow<List<AuditLog>> {
+        return auditLogRepository.getLogsForEntity(emiId)
     }
 }
