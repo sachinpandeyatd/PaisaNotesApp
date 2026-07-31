@@ -3,6 +3,7 @@ package com.paisanotes.presentation.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.paisanotes.domain.model.Transaction
+import com.paisanotes.domain.repository.AccountRepository
 import com.paisanotes.domain.repository.PersonRepository
 import com.paisanotes.domain.repository.TransactionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,6 +17,7 @@ data class HomeState(
     val thisMonthIncome: Double = 0.0,
     val thisMonthExpense: Double = 0.0,
     val totalExposure: Double = 0.0,
+    val totalNetWorth: Double = 0.0,
     val recentTransactions: List<Transaction> = emptyList(),
     val isLoading: Boolean = true
 )
@@ -23,7 +25,8 @@ data class HomeState(
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
-    private val personRepository: PersonRepository
+    private val personRepository: PersonRepository,
+    private val accountRepository: AccountRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeState())
@@ -45,16 +48,19 @@ class HomeViewModel @Inject constructor(
                 transactionRepository.getIncomeBetween(startOfMonth, endOfMonth),
                 transactionRepository.getExpenseBetween(startOfMonth, endOfMonth),
                 personRepository.getAllPeople(), // We sum up the exposure from all people
-                transactionRepository.getRecentTransactions(limit = 5)
-            ) { income, expense, peopleList, recentTxns ->
+                transactionRepository.getRecentTransactions(limit = 5),
+                accountRepository.getAccountsWithBalances()
+            ) { income, expense, peopleList, recentTxns, accounts ->
                 
                 // Calculate how much money all friends combined owe you
                 val exposure = peopleList.sumOf { it.totalExposure }
+                val netWorth = accounts.sumOf { it.currentBalance }
 
                 HomeState(
                     thisMonthIncome = income,
                     thisMonthExpense = expense,
                     totalExposure = exposure,
+                    totalNetWorth = netWorth,
                     recentTransactions = recentTxns,
                     isLoading = false
                 )

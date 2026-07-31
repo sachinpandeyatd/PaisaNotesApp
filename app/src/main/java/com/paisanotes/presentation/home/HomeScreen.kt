@@ -98,6 +98,21 @@ fun HomeScreen(
                 }
             }
 
+            item {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Total Net Worth", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        text = formatter.format(state.totalNetWorth),
+                        style = MaterialTheme.typography.displayMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
             // 2. EXPOSURE CARD
             item {
                 OutlinedCard(modifier = Modifier.fillMaxWidth()) {
