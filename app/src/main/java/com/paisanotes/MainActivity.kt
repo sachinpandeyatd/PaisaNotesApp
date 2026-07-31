@@ -27,6 +27,7 @@ import com.paisanotes.presentation.main.MainScreen
 import com.paisanotes.presentation.navigation.AddTransactionRoute
 import com.paisanotes.presentation.navigation.HomeRoute
 import com.paisanotes.presentation.navigation.LoginRoute
+import com.paisanotes.presentation.navigation.MyEmisRoute
 import com.paisanotes.presentation.navigation.PeopleRoute
 import com.paisanotes.presentation.navigation.TransactionsRoute
 import com.paisanotes.presentation.transactions.TransactionsScreen
@@ -42,8 +43,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-//        val startScreen = if (tokenManager.getToken() != null) TransactionsRoute else LoginRoute
-        val startScreen = if (tokenManager.getToken() != null) HomeRoute else LoginRoute
+        val quickAction = intent.getStringExtra("QUICK_ACTION")
+
+        val startScreen = if (tokenManager.getToken() != null) {
+            // 🚨 Check if the widget told us to open a specific screen!
+            when (quickAction) {
+                "TRANSACTION" -> AddTransactionRoute(null)
+                "LOAN" -> PeopleRoute // (Or AddLoanRoute if you want to pass a default person)
+                "EMI" -> MyEmisRoute
+                else -> HomeRoute
+            }
+        } else {
+            LoginRoute
+        }
 
         setContent {
             MaterialTheme {

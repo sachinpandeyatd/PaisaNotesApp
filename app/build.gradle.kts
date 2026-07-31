@@ -101,6 +101,7 @@ dependencies {
 
     implementation(libs.androidx.compose.material.icons.extended)
 
+    implementation(libs.material)
     implementation(libs.androidx.room.common)
 
     // OAuth2
