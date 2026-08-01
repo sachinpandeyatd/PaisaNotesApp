@@ -67,18 +67,30 @@ class AddLoanViewModel @Inject constructor(
 
         viewModelScope.launch {
             _state.update { it.copy(isSaving = true) }
-            val loan = Loan(
-                id = loanId ?: UUID.randomUUID().toString(),
+
+            // Fetch the actual existing data so we don't erase history!
+            val existingLoan = loanId?.let { repository.getLoanById(it) }
+
+            // Safely copy existing data, or create new if it's null
+            val loan = existingLoan?.copy(
+                type = _state.value.type,
+                amountLent = parsedAmount,
+                notes = _state.value.notes,
+                // Check if the new edits mean the Loan is now fully paid!
+                status = if (existingLoan.amountRepaid >= parsedAmount) "CLOSED" else "ACTIVE"
+            ) ?: Loan(
+                id = UUID.randomUUID().toString(),
                 personId = personId,
                 type = _state.value.type,
                 amountLent = parsedAmount,
+                amountRepaid = 0.0,
                 dateGiven = System.currentTimeMillis(),
                 expectedReturnDate = null,
                 status = "ACTIVE",
-                notes = _state.value.notes,
-                amountRepaid = 0.0,
+                notes = _state.value.notes
             )
-            repository.saveLoan(loan) // Saves to Room!
+
+            repository.saveLoan(loan)
             _state.update { it.copy(isSaving = false, saveSuccess = true) }
         }
     }

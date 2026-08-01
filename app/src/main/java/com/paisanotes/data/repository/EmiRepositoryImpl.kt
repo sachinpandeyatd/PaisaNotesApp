@@ -75,27 +75,39 @@ class EmiRepositoryImpl @Inject constructor(
             amountPaid = newAmountPaid,
             status = status,
             updatedAt = System.currentTimeMillis(),
-            syncStatus = SyncStatus.PENDING_UPDATE
+            syncStatus = com.paisanotes.data.local.entity.SyncStatus.PENDING_UPDATE
         ))
 
-        // 🚨 DYNAMIC LEDGER ENTRY
+        // DYNAMIC LEDGER ENTRY
         val txnType = if (entity.ownerType == "ME") "EXPENSE" else "INCOME"
         val refText = if (!entity.refNumber.isNullOrBlank()) " (Ref: ${entity.refNumber})" else ""
         val txnId = java.util.UUID.randomUUID().toString()
 
         transactionDao.insertTransaction(
             com.paisanotes.data.local.entity.TransactionEntity(
-                id = txnId, amount = amount, transactionType = txnType, merchant = null,
-                category = "EMI Repayment", categoryId = null, accountId = null, transferAccountId = null,
-                transactionDate = System.currentTimeMillis(), paymentMethod = "UPI", source = "EMI_AUTO",
-                notes = "EMI: $monthName$refText", // e.g., "EMI: July 2026 (Ref: HDFC123)"
-                createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis(),
-                syncStatus = SyncStatus.PENDING_INSERT
+                id = txnId,
+                amount = amount,
+                transactionType = txnType,
+                merchant = null,
+                category = "EMI Repayment",
+                categoryId = null,
+                accountId = null,
+                transferAccountId = null,
+                transactionDate = System.currentTimeMillis(),
+                paymentMethod = "UPI",
+                source = "EMI_AUTO",
+                notes = "EMI: $monthName$refText",
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis(),
+                syncStatus = com.paisanotes.data.local.entity.SyncStatus.PENDING_INSERT
             )
         )
 
+        // AUDIT LOGS
         val logMetadata = """{"amountPaid": $amount, "totalPaid": $newAmountPaid, "month": "$monthName"}"""
-        auditLogDao.insertLog(com.paisanotes.data.local.entity.AuditLogEntity(entityType = "EMI", entityId = emiId, actionType = "UPDATE", metadata = logMetadata))
+        auditLogDao.insertLog(com.paisanotes.data.local.entity.AuditLogEntity(
+            entityType = "EMI", entityId = emiId, actionType = "UPDATE", metadata = logMetadata
+        ))
 
         triggerBackgroundSync()
     }

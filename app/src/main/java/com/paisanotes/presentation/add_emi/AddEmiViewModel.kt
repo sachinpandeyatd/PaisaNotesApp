@@ -76,29 +76,53 @@ class AddEmiViewModel @Inject constructor(
         val pAmount = s.principal.toDoubleOrNull()
         val mAmount = s.monthlyAmount.toDoubleOrNull()
         val tMonths = s.totalMonths.toIntOrNull()
-        val totalAmt = s.totalAmountWithInterest.toDoubleOrNull() ?: pAmount // Default to Principal if blank
-        val intRate = s.interestRate.toDoubleOrNull()
 
-        if (pAmount == null || mAmount == null || tMonths == null || totalAmt == null || s.itemName.isBlank()) return
+        if (pAmount == null || mAmount == null || tMonths == null || s.itemName.isBlank()) {
+            _state.update { it.copy(isSaving = false) }
+            return
+        }
 
         viewModelScope.launch {
             _state.update { it.copy(isSaving = true) }
-            val emi = Emi(
-                id = emiId ?: UUID.randomUUID().toString(),
-                personId = personId,
-                refNumber = s.refNumber.takeIf { it.isNotBlank() },
-                itemName = s.itemName,
-                ownerType = if (personId == null) "ME" else "FRIEND",
-                principalAmount = pAmount,
-                monthlyEmiAmount = mAmount,
-                totalMonths = tMonths,
-                totalAmountWithInterest = totalAmt,
-                interestRate = intRate,
-                amountPaid = 0.0,
-                completedMonths = 0,
-                startDate = System.currentTimeMillis(),
-                status = "ACTIVE"
-            )
+
+            val totalAmt = s.totalAmountWithInterest.toDoubleOrNull() ?: pAmount
+            val intRate = s.interestRate.toDoubleOrNull()
+
+            // Fetch the actual existing data from Room so we don't erase history!
+            val existingEmi = if (emiId != null) repository.getEmiById(emiId) else null
+
+            // Safely copy existing data, or create new if it's null
+            val emi = if (existingEmi != null) {
+                existingEmi.copy(
+                    itemName = s.itemName,
+                    principalAmount = pAmount,
+                    monthlyEmiAmount = mAmount,
+                    totalMonths = tMonths,
+                    totalAmountWithInterest = totalAmt,
+                    interestRate = intRate,
+                    refNumber = s.refNumber.takeIf { it.isNotBlank() },
+                    // Check if the new edits mean the EMI is now fully paid!
+                    status = if (existingEmi.amountPaid >= totalAmt || existingEmi.completedMonths >= tMonths) "CLOSED" else "ACTIVE"
+                )
+            } else {
+                com.paisanotes.domain.model.Emi(
+                    id = java.util.UUID.randomUUID().toString(),
+                    personId = personId,
+                    refNumber = s.refNumber.takeIf { it.isNotBlank() },
+                    itemName = s.itemName,
+                    ownerType = if (personId == null) "ME" else "FRIEND",
+                    principalAmount = pAmount,
+                    monthlyEmiAmount = mAmount,
+                    totalMonths = tMonths,
+                    completedMonths = 0,
+                    totalAmountWithInterest = totalAmt,
+                    interestRate = intRate,
+                    amountPaid = 0.0,
+                    startDate = System.currentTimeMillis(),
+                    status = "ACTIVE"
+                )
+            }
+
             repository.saveEmi(emi)
             _state.update { it.copy(isSaving = false, saveSuccess = true) }
         }
