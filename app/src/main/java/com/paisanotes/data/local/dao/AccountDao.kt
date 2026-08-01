@@ -42,4 +42,7 @@ interface AccountDao {
 
     @Query("UPDATE accounts SET syncStatus = 'SYNCED' WHERE id IN (:ids)")
     suspend fun markAsSynced(ids: List<String>)
+
+    @Query("SELECT * FROM accounts WHERE name LIKE '%' || :name || '%' AND isDeleted = 0 LIMIT 1")
+    suspend fun findAccountByName(name: String): AccountEntity?
 }

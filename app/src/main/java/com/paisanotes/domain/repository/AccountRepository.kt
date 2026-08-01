@@ -6,4 +6,5 @@ import kotlinx.coroutines.flow.Flow
 interface AccountRepository {
     fun getAccountsWithBalances(): Flow<List<Account>>
     suspend fun saveAccount(name: String, type: String, initialBalance: Double)
+    suspend fun getOrCreateAccountId(name: String): String
 }

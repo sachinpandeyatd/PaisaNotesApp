@@ -5,7 +5,8 @@ import javax.inject.Inject
 data class ParsedTransaction(
     val amount: Double,
     val merchant: String?,
-    val type: String // INCOME or EXPENSE
+    val type: String, // INCOME or EXPENSE
+    val accountName: String
 )
 
 class NotificationParser @Inject constructor() {
@@ -49,7 +50,8 @@ class NotificationParser @Inject constructor() {
                     return ParsedTransaction(
                         amount = amount,
                         merchant = extractMerchant(text, "EXPENSE"),
-                        type = "EXPENSE"
+                        type = "EXPENSE",
+                        accountName = extractAccountName(packageName, title, text)
                     )
                 }
             }
@@ -63,7 +65,8 @@ class NotificationParser @Inject constructor() {
                     return ParsedTransaction(
                         amount = amount,
                         merchant = extractMerchant(text, "INCOME"),
-                        type = "INCOME"
+                        type = "INCOME",
+                        accountName = extractAccountName(packageName, title, text)
                     )
                 }
             }
@@ -72,6 +75,26 @@ class NotificationParser @Inject constructor() {
         }
 
         return null // Parsing failed or confidence too low
+    }
+
+    private fun extractAccountName(packageName: String, title: String, text: String): String {
+        val fullText = "$title $text".uppercase()
+
+        // Match common Indian banks and wallets
+        if (fullText.contains("HDFC")) return "HDFC"
+        if (fullText.contains("SBI") || fullText.contains("YONO")) return "SBI"
+        if (fullText.contains("ICICI")) return "ICICI"
+        if (fullText.contains("KOTAK")) return "Kotak"
+        if (fullText.contains("AXIS")) return "Axis"
+        if (fullText.contains("PNB") || fullText.contains("PUNJAB NATIONAL")) return "PNB"
+        if (fullText.contains("BOB") || fullText.contains("BANK OF BARODA")) return "BOB"
+        if (fullText.contains("PAYTM")) return "Paytm"
+        if (fullText.contains("AMAZON")) return "Amazon Pay"
+        if (packageName.contains("nbu.paisa") || fullText.contains("GPAY")) return "GPay"
+        if (packageName.contains("phonepe") || fullText.contains("PHONEPE")) return "PhonePe"
+
+        // Fallback if we can't identify the bank
+        return "Auto-Captured Wallet"
     }
 
     private fun extractAmount(text: String): Double? {

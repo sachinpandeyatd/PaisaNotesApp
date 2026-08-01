@@ -6,6 +6,7 @@ import android.service.notification.StatusBarNotification
 import android.util.Log
 import com.paisanotes.domain.model.Transaction
 import com.paisanotes.domain.parser.NotificationParser
+import com.paisanotes.domain.repository.AccountRepository
 import com.paisanotes.domain.repository.TransactionRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -24,6 +25,9 @@ class PaisaNotificationListener : NotificationListenerService() {
 
     @Inject
     lateinit var repository: TransactionRepository
+
+    @Inject
+    lateinit var accountRepository: AccountRepository
 
     // A coroutine scope specifically for this service
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -61,6 +65,8 @@ class PaisaNotificationListener : NotificationListenerService() {
                     return@launch // Stop execution! Do not save!
                 }
 
+                val matchedAccountId = accountRepository.getOrCreateAccountId(parsedData.accountName)
+
                 // 2. If it's unique, save it as usual!
                 val transaction = Transaction(
                     id = UUID.randomUUID().toString(),
@@ -68,6 +74,9 @@ class PaisaNotificationListener : NotificationListenerService() {
                     transactionType = parsedData.type,
                     merchant = parsedData.merchant,
                     category = "Auto-Captured",
+                    categoryId = null,
+                    accountId = matchedAccountId,
+                    transferAccountId = null,
                     transactionDate = System.currentTimeMillis(),
                     paymentMethod = "UPI",
                     source = "NOTIFICATION",
