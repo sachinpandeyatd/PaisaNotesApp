@@ -12,11 +12,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +54,12 @@ fun PersonDetailScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
+    LaunchedEffect (state.deleteSuccess) {
+        if (state.deleteSuccess) {
+            onNavigateBack() // Go back to the People list!
+        }
+    }
+
     var showBottomSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
 
@@ -67,6 +75,13 @@ fun PersonDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (state.person != null) {
+                        IconButton(onClick = viewModel::openEditDialog) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit Person")
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -184,6 +199,51 @@ fun PersonDetailScreen(
                 }
             }
 
+            // --- EDIT / DELETE PERSON DIALOG ---
+            if (state.showEditDialog) {
+                AlertDialog(
+                    onDismissRequest = viewModel::closeEditDialog,
+                    title = { Text("Edit Friend") },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = state.editName,
+                                onValueChange = viewModel::onEditNameChange,
+                                label = { Text("Name") },
+                                singleLine = true
+                            )
+                            OutlinedTextField(
+                                value = state.editPhone,
+                                onValueChange = viewModel::onEditPhoneChange,
+                                label = { Text("Phone Number (Optional)") },
+                                singleLine = true,
+                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone)
+                            )
+
+                            // Show the error message in Red if it exists
+                            if (state.errorMessage != null) {
+                                Text(
+                                    text = state.errorMessage!!,
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.padding(top = 8.dp)
+                                )
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        Button(onClick = viewModel::savePersonEdits) { Text("Save") }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = viewModel::deletePerson,
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Text("Delete Person")
+                        }
+                    }
+                )
+            }
         }
     }
 }
@@ -311,7 +371,7 @@ fun EmisList(emis: List<Emi>, onRecordEmiPayment: (String, Double, String) -> Un
                                 Button(onClick = {
                                     selectedEmi = emi
                                     paymentAmount = emi.monthlyEmiAmount.toString()
-                                    selectedMonth = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("MMM yyyy"))
+                                    selectedMonth = LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("MMM yyyy"))
                                 }) { Text("Pay") }
                             } else {
                                 Badge(containerColor = MaterialTheme.colorScheme.primary) { Text("CLOSED") }

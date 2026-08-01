@@ -30,6 +30,12 @@ data class PersonDetailState(
     val proxyEmis: List<Emi> = emptyList(),
     val totalExposure: Double = 0.0,
     val isLoading: Boolean = true,
+
+    val showEditDialog: Boolean = false,
+    val editName: String = "",
+    val editPhone: String = "",
+    val deleteSuccess: Boolean = false,
+    val errorMessage: String? = null
 )
 
 @HiltViewModel
@@ -89,6 +95,48 @@ class PersonDetailViewModel @Inject constructor(
     fun recordEmiPayment(emiId: String, amount: Double, monthName: String) {
         viewModelScope.launch {
             emiRepository.recordEmiPayment(emiId, amount, monthName)
+        }
+    }
+
+    // --- EDIT PERSON LOGIC ---
+
+    fun openEditDialog() {
+        val p = _state.value.person ?: return
+        _state.update { it.copy(showEditDialog = true, editName = p.name, editPhone = p.phoneNumber ?: "") }
+    }
+
+    fun closeEditDialog() {
+        _state.update { it.copy(showEditDialog = false, errorMessage = null) }
+    }
+
+    fun onEditNameChange(name: String) { _state.update { it.copy(editName = name) } }
+    fun onEditPhoneChange(phone: String) { _state.update { it.copy(editPhone = phone) } }
+
+    fun savePersonEdits() {
+        val s = _state.value
+        val personId = s.person?.id ?: return
+        if (s.editName.isBlank()) return
+
+        viewModelScope.launch {
+            personRepository.updatePerson(personId, s.editName, s.editPhone)
+            closeEditDialog()
+        }
+    }
+
+    fun deletePerson() {
+        val s = _state.value
+
+        if (s.totalExposure != 0.0) {
+            _state.update {
+                it.copy(errorMessage = "Cannot delete a friend with an active balance. Total Exposure must be exactly ₹0.00.")
+            }
+            return // Stop execution!
+        }
+
+        val personId = s.person?.id ?: return
+        viewModelScope.launch {
+            personRepository.deletePerson(personId)
+            _state.update { it.copy(showEditDialog = false, deleteSuccess = true) }
         }
     }
 }

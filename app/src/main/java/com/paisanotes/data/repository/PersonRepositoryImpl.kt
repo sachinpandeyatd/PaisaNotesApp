@@ -66,4 +66,39 @@ class PersonRepositoryImpl @Inject constructor(
 
         triggerBackgroundSync()
     }
+
+    override suspend fun updatePerson(id: String, name: String, phone: String?) {
+        val entity = dao.getPersonById(id) ?: return
+
+        val updatedEntity = entity.copy(
+            name = name.trim(),
+            phoneNumber = phone?.trim()?.takeIf { it.isNotBlank() },
+            updatedAt = System.currentTimeMillis(),
+            syncStatus = SyncStatus.PENDING_UPDATE
+        )
+        dao.updatePerson(updatedEntity)
+
+        // 🚨 AUDIT LOG
+        val metadataJson = """{"name": "$name", "phone": "${phone ?: ""}"}"""
+        auditLogDao.insertLog(AuditLogEntity(entityType = "PERSON", entityId = id, actionType = "UPDATE", metadata = metadataJson))
+
+        triggerBackgroundSync()
+    }
+
+    override suspend fun deletePerson(id: String) {
+        val entity = dao.getPersonById(id) ?: return
+
+        val deletedEntity = entity.copy(
+            isDeleted = true,
+            updatedAt = System.currentTimeMillis(),
+            syncStatus = SyncStatus.PENDING_DELETE
+        )
+        dao.updatePerson(deletedEntity)
+
+        // 🚨 AUDIT LOG
+        val metadataJson = """{"name": "${entity.name}"}"""
+        auditLogDao.insertLog(AuditLogEntity(entityType = "PERSON", entityId = id, actionType = "DELETE", metadata = metadataJson))
+
+        triggerBackgroundSync()
+    }
 }
