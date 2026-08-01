@@ -17,5 +17,5 @@ interface TransactionRepository {
     fun getExpenseBetween(startDate: Long, endDate: Long): Flow<Double>
     fun getRecentTransactions(limit: Int): Flow<List<Transaction>>
 
-    suspend fun hasRecentDuplicate(amount: Double, type: String, timeWindowMs: Long): Boolean
+    suspend fun hasRecentDuplicate(amount: Double, type: String, notes: String, timeWindowMs: Long): Boolean
 }

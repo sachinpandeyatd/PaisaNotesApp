@@ -49,7 +49,8 @@ interface TransactionDao {
         AND transactionType = :type 
         AND source = 'NOTIFICATION' 
         AND transactionDate >= :timeThreshold 
+        AND notes != :currentNotes 
         AND isDeleted = 0
     """)
-    suspend fun getDuplicateCount(amount: Double, type: String, timeThreshold: Long): Int
+    suspend fun getDuplicateCount(amount: Double, type: String, currentNotes: String, timeThreshold: Long): Int
 }

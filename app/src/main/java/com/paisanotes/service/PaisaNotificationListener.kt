@@ -32,6 +32,12 @@ class PaisaNotificationListener : NotificationListenerService() {
     // A coroutine scope specifically for this service
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    private val processedHashes = java.util.Collections.newSetFromMap(object : java.util.LinkedHashMap<Int, Boolean>() {
+        override fun removeEldestEntry(eldest: Map.Entry<Int, Boolean>): Boolean {
+            return size > 50
+        }
+    })
+
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
         if (sbn == null) return
@@ -45,6 +51,10 @@ class PaisaNotificationListener : NotificationListenerService() {
 
         Log.d("PaisaListener", "Notification from $packageName: $title - $text")
 
+        val payloadHash = "$packageName:$title:$text".hashCode()
+        if (processedHashes.contains(payloadHash)) return
+        processedHashes.add(payloadHash)
+
         // 1. Pass to our Parser
         val parsedData = parser.parse(packageName, title, text)
 
@@ -53,11 +63,15 @@ class PaisaNotificationListener : NotificationListenerService() {
 
             serviceScope.launch {
 
+                val matchedAccountId = accountRepository.getOrCreateAccountId(parsedData.accountName)
+                val notesText = "Captured from $packageName"
+
                 // DEDUPLICATION CHECK (e.g., 5-minute window = 5 * 60 * 1000 milliseconds)
                 val isDuplicate = repository.hasRecentDuplicate(
                     amount = parsedData.amount,
                     type = parsedData.type,
-                    timeWindowMs = 300_000L // 5 minutes
+                    notes = notesText,
+                    timeWindowMs = 120_000L
                 )
 
                 if (isDuplicate) {
@@ -65,7 +79,6 @@ class PaisaNotificationListener : NotificationListenerService() {
                     return@launch // Stop execution! Do not save!
                 }
 
-                val matchedAccountId = accountRepository.getOrCreateAccountId(parsedData.accountName)
 
                 // 2. If it's unique, save it as usual!
                 val transaction = Transaction(
