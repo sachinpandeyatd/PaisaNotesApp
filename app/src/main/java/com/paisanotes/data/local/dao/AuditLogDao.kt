@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.paisanotes.data.local.entity.AuditLogEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -26,4 +27,10 @@ interface AuditLogDao {
 
     @Query("SELECT * FROM audit_logs WHERE entityId = :entityId ORDER BY createdAt DESC")
     fun getLogsForEntity(entityId: String): Flow<List<AuditLogEntity>>
+
+    @Query("SELECT * FROM audit_logs WHERE id = :id")
+    suspend fun getLogById(id: String): AuditLogEntity?
+
+    @Update
+    suspend fun updateLog(log: AuditLogEntity)
 }

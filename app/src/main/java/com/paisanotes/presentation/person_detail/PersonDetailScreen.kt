@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -39,9 +40,11 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.ui.text.input.KeyboardType
 import com.paisanotes.domain.model.AuditLog
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -161,7 +164,8 @@ fun PersonDetailScreen(
                                 onNavigateToAddEmi(personId, emiId)
                             }
                         },
-                        getEmiHistory = viewModel::getEmiHistory
+                        getEmiHistory = viewModel::getEmiHistory,
+                        onEditEmiPayment = viewModel::editEmiPayment
                     )
                 }
             }
@@ -337,7 +341,13 @@ fun LoansList(loans: List<Loan>, onEditLoan: (String) -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EmisList(emis: List<Emi>, onRecordEmiPayment: (String, Double, String) -> Unit, onEditEmi: (String) -> Unit, getEmiHistory: (String) -> Flow<List<AuditLog>>) {
+fun EmisList(
+    emis: List<Emi>,
+    onRecordEmiPayment: (String, Double, String) -> Unit,
+    onEditEmi: (String) -> Unit,
+    getEmiHistory: (String) -> Flow<List<AuditLog>>,
+    onEditEmiPayment: (String, String, String?, Double, Double, String) -> Unit
+) {
     var selectedEmi by remember { mutableStateOf<Emi?>(null) }
     var paymentAmount by remember { mutableStateOf("") }
     var selectedMonth by remember { mutableStateOf("") }
@@ -345,8 +355,18 @@ fun EmisList(emis: List<Emi>, onRecordEmiPayment: (String, Double, String) -> Un
     var historyEmiId by remember { mutableStateOf<String?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    // STATE FOR EDITING A PAYMENT
+    var logToEdit by remember { mutableStateOf<AuditLog?>(null) }
+
+    // GENERATE A BEAUTIFUL LIST OF MONTHS (Last 3 months to Next 6 months)
+    val monthsList = remember {
+        val formatter = DateTimeFormatter.ofPattern("MMM yyyy")
+        val current = YearMonth.now()
+        (-3..6).map { current.plusMonths(it.toLong()).format(formatter) }
+    }
+
     if (emis.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("No EMIs found.") }
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("No proxy EMIs linked to this person.") }
     } else {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(emis, key = { it.id }) { emi ->
@@ -357,22 +377,20 @@ fun EmisList(emis: List<Emi>, onRecordEmiPayment: (String, Double, String) -> Un
                     supportingContent = {
                         Column {
                             Text("${formatter.format(emi.monthlyEmiAmount)} / month  •  Paid: ${emi.completedMonths}/${emi.totalMonths}")
-                            // Show total progress
                             Text("Total Paid: ${formatter.format(emi.amountPaid)} of ${formatter.format(emi.totalAmountWithInterest)}", style = MaterialTheme.typography.labelSmall)
                         }
                     },
                     trailingContent = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = { historyEmiId = emi.id }) {
-                                Icon(Icons.Default.History, contentDescription = "View History", tint = MaterialTheme.colorScheme.primary)
+                                Icon(Icons.Default.History, "History", tint = MaterialTheme.colorScheme.primary)
                             }
-
                             if (emi.status == "ACTIVE") {
                                 Button(onClick = {
                                     selectedEmi = emi
                                     paymentAmount = emi.monthlyEmiAmount.toString()
-                                    selectedMonth = LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("MMM yyyy"))
-                                }) { Text("Pay") }
+                                    selectedMonth = YearMonth.now().format(DateTimeFormatter.ofPattern("MMM yyyy"))
+                                }, contentPadding = PaddingValues(horizontal = 8.dp)) { Text("Pay") }
                             } else {
                                 Badge(containerColor = MaterialTheme.colorScheme.primary) { Text("CLOSED") }
                             }
@@ -384,53 +402,15 @@ fun EmisList(emis: List<Emi>, onRecordEmiPayment: (String, Double, String) -> Un
         }
     }
 
-    // --- PAYMENT DIALOG ---
-    if (selectedEmi != null) {
-        AlertDialog(
-            onDismissRequest = { selectedEmi = null },
-            title = { Text("Record EMI Payment") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    OutlinedTextField(
-                        value = paymentAmount,
-                        onValueChange = { paymentAmount = it },
-                        label = { Text("Amount Paid") },
-                        prefix = { Text("₹") },
-                        singleLine = true
-                    )
-                    OutlinedTextField(
-                        value = selectedMonth,
-                        onValueChange = { selectedMonth = it },
-                        label = { Text("For Month (e.g. Jul 2026)") },
-                        singleLine = true
-                    )
-                }
-            },
-            confirmButton = {
-                Button(onClick = {
-                    val amt = paymentAmount.toDoubleOrNull()
-                    if (amt != null && amt > 0 && selectedMonth.isNotBlank()) {
-                        onRecordEmiPayment(selectedEmi!!.id, amt, selectedMonth)
-                        selectedEmi = null
-                    }
-                }) { Text("Confirm") }
-            },
-            dismissButton = { TextButton(onClick = { selectedEmi = null }) { Text("Cancel") } }
-        )
-    }
-
-    // --- REPAYMENT HISTORY BOTTOM SHEET ---
     if (historyEmiId != null) {
-        // Collect the Flow specifically for the selected EMI
         val historyFlow = remember(historyEmiId) { getEmiHistory(historyEmiId!!) }
         val historyLogs by historyFlow.collectAsState(initial = emptyList())
 
         ModalBottomSheet(onDismissRequest = { historyEmiId = null }, sheetState = sheetState) {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp).padding(bottom = 32.dp)) {
-                Text("Repayment History", style = MaterialTheme.typography.titleLarge)
+                Text("Repayment History (Tap to Edit)", style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(16.dp))
 
-                // Filter out creation/edits and only show actual Repayments (logs containing "month")
                 val repaymentLogs = historyLogs.filter { it.metadata.containsKey("month") }
 
                 if (repaymentLogs.isEmpty()) {
@@ -439,34 +419,21 @@ fun EmisList(emis: List<Emi>, onRecordEmiPayment: (String, Double, String) -> Un
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(repaymentLogs, key = { it.id }) { log ->
                             val formatter = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
-                            val sdf =
-                                SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
-
-                            // Safely extract the JSON metadata
                             val monthStr = log.metadata["month"]?.toString() ?: "Unknown"
-                            val amtStr =
-                                log.metadata["amountPaid"]?.toString()?.toDoubleOrNull() ?: 0.0
+                            val amtStr = log.metadata["amountPaid"]?.toString()?.toDoubleOrNull() ?: 0.0
 
                             ListItem(
-                                headlineContent = {
-                                    Text(
-                                        monthStr,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                // MAKE HISTORY ITEMS CLICKABLE FOR EDITING
+                                modifier = Modifier.clickable {
+                                    logToEdit = log
+                                    paymentAmount = amtStr.toString()
+                                    selectedMonth = monthStr
+                                    // Close the sheet so the dialog can appear cleanly
+                                    historyEmiId = null
                                 },
-                                supportingContent = {
-                                    Text(
-                                        "Recorded on: ${sdf.format(Date(log.createdAt))}",
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                },
-                                trailingContent = {
-                                    Text(
-                                        "+ ${formatter.format(amtStr)}",
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                },
+                                headlineContent = { Text(monthStr, fontWeight = FontWeight.Bold) },
+                                supportingContent = { Text("Recorded on: ${SimpleDateFormat("dd MMM yyyy, hh:mm a", LocalLocale.current.platformLocale).format(Date(log.createdAt))}", style = MaterialTheme.typography.labelSmall) },
+                                trailingContent = { Text("+ ${formatter.format(amtStr)}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) },
                                 colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                             )
                         }
@@ -474,5 +441,69 @@ fun EmisList(emis: List<Emi>, onRecordEmiPayment: (String, Double, String) -> Un
                 }
             }
         }
+    }
+
+    val dialogEmi = selectedEmi ?: emis.find { it.id == logToEdit?.entityId }
+    if (dialogEmi != null && (selectedEmi != null || logToEdit != null)) {
+        AlertDialog(
+            onDismissRequest = { selectedEmi = null; logToEdit = null },
+            title = { Text(if (logToEdit != null) "Edit Payment" else "Record EMI Payment") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    OutlinedTextField(
+                        value = paymentAmount,
+                        onValueChange = { paymentAmount = it },
+                        label = { Text("Amount Paid") },
+                        prefix = { Text("₹") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // 🚨 THE NEW MONTH DROPDOWN
+                    var expandedMonth by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = expandedMonth,
+                        onExpandedChange = { expandedMonth = it }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedMonth,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("For Month") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedMonth) },
+                            modifier = Modifier.menuAnchor().fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(expanded = expandedMonth, onDismissRequest = { expandedMonth = false }) {
+                            monthsList.forEach { month ->
+                                DropdownMenuItem(
+                                    text = { Text(month) },
+                                    onClick = { selectedMonth = month; expandedMonth = false }
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val amt = paymentAmount.toDoubleOrNull()
+                    if (amt != null && amt > 0 && selectedMonth.isNotBlank()) {
+                        if (logToEdit != null) {
+                            // WE ARE EDITING
+                            val oldAmt = logToEdit!!.metadata["amountPaid"]?.toString()?.toDoubleOrNull() ?: 0.0
+                            val txnId = logToEdit!!.metadata["transactionId"]?.toString()
+                            onEditEmiPayment(logToEdit!!.id, dialogEmi.id, txnId, oldAmt, amt, selectedMonth)
+                            logToEdit = null
+                        } else {
+                            // WE ARE ADDING NEW
+                            onRecordEmiPayment(dialogEmi.id, amt, selectedMonth)
+                            selectedEmi = null
+                        }
+                    }
+                }) { Text("Confirm") }
+            },
+            dismissButton = { TextButton(onClick = { selectedEmi = null; logToEdit = null }) { Text("Cancel") } }
+        )
     }
 }

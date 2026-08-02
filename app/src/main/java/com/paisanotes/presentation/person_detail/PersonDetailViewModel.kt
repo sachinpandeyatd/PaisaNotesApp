@@ -139,4 +139,10 @@ class PersonDetailViewModel @Inject constructor(
             _state.update { it.copy(showEditDialog = false, deleteSuccess = true) }
         }
     }
+
+    fun editEmiPayment(logId: String, emiId: String, transactionId: String?, oldAmount: Double, newAmount: Double, newMonth: String) {
+        viewModelScope.launch {
+            emiRepository.editEmiPayment(logId, emiId, transactionId, oldAmount, newAmount, newMonth)
+        }
+    }
 }

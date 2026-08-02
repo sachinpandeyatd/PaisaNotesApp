@@ -6,6 +6,8 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.paisanotes.data.local.dao.AuditLogDao
 import com.paisanotes.data.local.dao.EmiDao
 import com.paisanotes.data.local.dao.TransactionDao
@@ -56,7 +58,7 @@ class EmiRepositoryImpl @Inject constructor(
         dao.insertEmi(entity)
 
         val metadataJson = """{"itemName": "${emi.itemName}", "principal": ${emi.principalAmount}, "monthly": ${emi.monthlyEmiAmount}}"""
-        auditLogDao.insertLog(com.paisanotes.data.local.entity.AuditLogEntity(entityType = "EMI", entityId = emi.id, actionType = actionType, metadata = metadataJson))
+        auditLogDao.insertLog(AuditLogEntity(entityType = "EMI", entityId = emi.id, actionType = actionType, metadata = metadataJson))
 
         triggerBackgroundSync()
     }
@@ -75,16 +77,16 @@ class EmiRepositoryImpl @Inject constructor(
             amountPaid = newAmountPaid,
             status = status,
             updatedAt = System.currentTimeMillis(),
-            syncStatus = com.paisanotes.data.local.entity.SyncStatus.PENDING_UPDATE
+            syncStatus = SyncStatus.PENDING_UPDATE
         ))
 
         // DYNAMIC LEDGER ENTRY
         val txnType = if (entity.ownerType == "ME") "EXPENSE" else "INCOME"
         val refText = if (!entity.refNumber.isNullOrBlank()) " (Ref: ${entity.refNumber})" else ""
-        val txnId = java.util.UUID.randomUUID().toString()
+        val txnId = UUID.randomUUID().toString()
 
         transactionDao.insertTransaction(
-            com.paisanotes.data.local.entity.TransactionEntity(
+            TransactionEntity(
                 id = txnId,
                 amount = amount,
                 transactionType = txnType,
@@ -99,15 +101,17 @@ class EmiRepositoryImpl @Inject constructor(
                 notes = "EMI: $monthName$refText",
                 createdAt = System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis(),
-                syncStatus = com.paisanotes.data.local.entity.SyncStatus.PENDING_INSERT
+                syncStatus = SyncStatus.PENDING_INSERT
             )
         )
 
         // AUDIT LOGS
-        val logMetadata = """{"amountPaid": $amount, "totalPaid": $newAmountPaid, "month": "$monthName"}"""
-        auditLogDao.insertLog(com.paisanotes.data.local.entity.AuditLogEntity(
-            entityType = "EMI", entityId = emiId, actionType = "UPDATE", metadata = logMetadata
+        val logId = UUID.randomUUID().toString()
+        val logMetadata = """{"amountPaid": $amount, "totalPaid": $newAmountPaid, "month": "$monthName", "transactionId": "$txnId"}"""
+        auditLogDao.insertLog(AuditLogEntity(
+            id = logId, entityType = "EMI", entityId = emiId, actionType = "UPDATE", metadata = logMetadata
         ))
+        triggerBackgroundSync()
 
         triggerBackgroundSync()
     }
@@ -130,7 +134,49 @@ class EmiRepositoryImpl @Inject constructor(
         ))
 
         val metadataJson = """{"itemName": "${entity.itemName}", "principal": ${entity.principalAmount}}"""
-        auditLogDao.insertLog(com.paisanotes.data.local.entity.AuditLogEntity(entityType = "EMI", entityId = id, actionType = "DELETE", metadata = metadataJson))
+        auditLogDao.insertLog(AuditLogEntity(entityType = "EMI", entityId = id, actionType = "DELETE", metadata = metadataJson))
+        triggerBackgroundSync()
+    }
+
+    override suspend fun editEmiPayment(logId: String, emiId: String, transactionId: String?, oldAmount: Double, newAmount: Double, newMonth: String) {
+        // 1. Re-calculate the EMI totals
+        val emi = dao.getEmiById(emiId) ?: return
+        val diff = newAmount - oldAmount
+        val newAmountPaid = emi.amountPaid + diff
+        val status = if (newAmountPaid >= emi.totalAmountWithInterest || emi.completedMonths >= emi.totalMonths) "CLOSED" else "ACTIVE"
+
+        dao.updateEmi(emi.copy(amountPaid = newAmountPaid, status = status, updatedAt = System.currentTimeMillis(), syncStatus = SyncStatus.PENDING_UPDATE))
+
+        // 2. Update the original Transaction (if we have the ID)
+        if (transactionId != null) {
+            val txn = transactionDao.getTransactionById(transactionId)
+            if (txn != null) {
+                val refText = if (!emi.refNumber.isNullOrBlank()) " (Ref: ${emi.refNumber})" else ""
+                transactionDao.updateTransaction(txn.copy(
+                    amount = newAmount,
+                    notes = "EMI: $newMonth$refText",
+                    updatedAt = System.currentTimeMillis(),
+                    syncStatus = SyncStatus.PENDING_UPDATE
+                ))
+            }
+        }
+
+        // 3. Update the Audit Log so the History UI looks correct!
+        val log = auditLogDao.getLogById(logId)
+        if (log != null) {
+            val mapType = object : TypeToken<MutableMap<String, Any>>() {}.type
+            val metadataMap: MutableMap<String, Any> = Gson().fromJson(log.metadata, mapType)
+
+            metadataMap["amountPaid"] = newAmount
+            metadataMap["totalPaid"] = newAmountPaid // Update the running total
+            metadataMap["month"] = newMonth
+
+            auditLogDao.updateLog(log.copy(
+                metadata = Gson().toJson(metadataMap),
+                syncStatus = SyncStatus.PENDING_UPDATE
+            ))
+        }
+
         triggerBackgroundSync()
     }
 }

@@ -52,7 +52,8 @@ fun MyEmisScreen(
                     emis = state.emis,
                     onRecordEmiPayment = viewModel::recordEmiPayment,
                     onEditEmi = { emiId -> onNavigateToAddEmi(emiId) },
-                    getEmiHistory = viewModel::getEmiHistory
+                    getEmiHistory = viewModel::getEmiHistory,
+                    onEditEmiPayment = viewModel::editEmiPayment
                 )
             }
         }

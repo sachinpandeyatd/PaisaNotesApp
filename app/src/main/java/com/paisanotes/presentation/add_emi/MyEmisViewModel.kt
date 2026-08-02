@@ -41,4 +41,10 @@ class MyEmisViewModel @Inject constructor(
     fun getEmiHistory(emiId: String): Flow<List<AuditLog>> {
         return auditLogRepository.getLogsForEntity(emiId)
     }
+
+    fun editEmiPayment(logId: String, emiId: String, transactionId: String?, oldAmount: Double, newAmount: Double, newMonth: String) {
+        viewModelScope.launch {
+            emiRepository.editEmiPayment(logId, emiId, transactionId, oldAmount, newAmount, newMonth)
+        }
+    }
 }

@@ -13,4 +13,5 @@ interface EmiRepository {
     suspend fun getEmiById(id: String): Emi?
     suspend fun deleteEmi(id: String)
 
+    suspend fun editEmiPayment(logId: String, emiId: String, transactionId: String?, oldAmount: Double, newAmount: Double, newMonth: String)
 }

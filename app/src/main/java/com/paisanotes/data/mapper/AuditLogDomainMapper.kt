@@ -16,6 +16,7 @@ fun AuditLogEntity.toDomainModel(): AuditLog {
     return AuditLog(
         id = id,
         entityType = entityType,
+        entityId = entityId,
         actionType = actionType,
         metadata = metadataMap,
         createdAt = createdAt
