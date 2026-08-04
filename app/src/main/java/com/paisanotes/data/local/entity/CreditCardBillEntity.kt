@@ -4,16 +4,18 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.UUID
 
-@Entity(tableName = "accounts")
-data class AccountEntity(
+@Entity(tableName = "credit_card_bills")
+data class CreditCardBillEntity(
     @PrimaryKey
     val id: String = UUID.randomUUID().toString(),
-    val name: String,
-    val type: String,
-    val initialBalance: Double,
-    val statementDay: Int? = null,
-    val dueDay: Int? = null,
-
+    val accountId: String,
+    val billingMonth: String,
+    val totalBilledAmount: Double,
+    val minimumDue: Double,
+    val amountPaid: Double,
+    val dueDate: Long?,
+    val status: String,
+    
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
     val isDeleted: Boolean = false,

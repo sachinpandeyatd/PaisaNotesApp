@@ -29,7 +29,8 @@ data class SyncPullResponse(
     val auditLogs: List<AuditLogDto>? = emptyList(),
     val categories: List<CategoryDto>? = emptyList(),
     val budgets: List<BudgetDto>? = emptyList(),
-    val accounts: List<AccountDto>? = emptyList()
+    val accounts: List<AccountDto>? = emptyList(),
+    val ccBills: List<CreditCardBillDto>? = emptyList()
 )
 
 data class PersonDto(
@@ -93,7 +94,8 @@ data class SyncPushRequest(
     val auditLogs: List<AuditLogDto>? = emptyList(),
     val categories: List<CategoryDto>?,
     val budgets: List<BudgetDto>? = emptyList(),
-    val accounts: List<AccountDto>? = emptyList()
+    val accounts: List<AccountDto>? = emptyList(),
+    val processedCcBillIds: List<String>? = emptyList()
 )
 
 data class SyncPushResponse(
@@ -104,7 +106,8 @@ data class SyncPushResponse(
     val processedAuditLogIds: List<String> = emptyList(),
     val processedCategoryIds: List<String>?,
     val processedBudgetIds: List<String>? = emptyList(),
-    val processedAccountIds: List<String>? = emptyList()
+    val processedAccountIds: List<String>? = emptyList(),
+    val ccBills: List<CreditCardBillDto>? = emptyList()
 )
 
 data class CategoryDto(
@@ -134,7 +137,15 @@ data class AccountDto(
     val name: String,
     val type: String, // CASH, SAVINGS, CREDIT_CARD, WALLET
     val initialBalance: Double,
+    val statementDay: Int?,
+    val dueDay: Int?,
     val createdAt: String,
     val updatedAt: String,
     val isDeleted: Boolean
+)
+
+data class CreditCardBillDto(
+    val id: String, val accountId: String, val billingMonth: String, val totalBilledAmount: Double,
+    val minimumDue: Double, val amountPaid: Double, val dueDate: String?, val status: String,
+    val createdAt: String, val updatedAt: String, val isDeleted: Boolean
 )

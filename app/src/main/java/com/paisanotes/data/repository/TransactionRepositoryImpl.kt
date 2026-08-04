@@ -130,4 +130,10 @@ class TransactionRepositoryImpl @Inject constructor(
         val duplicateCount = dao.getDuplicateCount(amount, type, notes, threshold)
         return duplicateCount > 0
     }
+
+    override fun getTransactionsForAccount(accountId: String): Flow<List<Transaction>> {
+        return dao.getTransactionsForAccount(accountId).map { entities ->
+            entities.map { it.toDomainModel() }
+        }
+    }
 }

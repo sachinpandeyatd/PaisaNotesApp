@@ -60,6 +60,7 @@ fun MainScreen(
             currentDestination?.hasRoute(ForgotPasswordRoute::class) == true ||
             currentDestination?.hasRoute(BudgetsRoute::class) == true ||
             currentDestination?.hasRoute(AccountsRoute::class) == true ||
+            currentDestination?.hasRoute(MyEmisRoute::class) == true ||
             currentDestination?.hasRoute(MyEmisRoute::class) == true
 
     // 🚨 WRAP EVERYTHING IN THE DRAWER
@@ -271,7 +272,10 @@ fun MainScreen(
                 }
                 composable<AccountsRoute> {
                     AccountsScreen(
-                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } }
+                        onOpenDrawer = { coroutineScope.launch { drawerState.open() } },
+                        onNavigateToAccountDetail = { accountId ->
+                            navController.navigate(AccountDetailRoute(accountId))
+                        }
                     )
                 }
                 composable<MyEmisRoute> {
@@ -280,6 +284,11 @@ fun MainScreen(
                         onNavigateToAddEmi = { emiId ->
                             navController.navigate(AddEmiRoute(personId = null, emiId = emiId))
                         }
+                    )
+                }
+                composable<AccountDetailRoute> {
+                    com.paisanotes.presentation.account_detail.AccountDetailScreen(
+                        onNavigateBack = { navController.popBackStack() }
                     )
                 }
             }

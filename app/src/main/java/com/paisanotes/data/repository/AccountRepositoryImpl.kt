@@ -30,7 +30,13 @@ class AccountRepositoryImpl @Inject constructor(
         return dao.getAccountsWithBalances().map { tuples -> tuples.map { it.toDomainModel() } }
     }
 
-    override suspend fun saveAccount(name: String, type: String, initialBalance: Double) {
+    override fun getAccountWithBalance(accountId: String): Flow<Account?> {
+        return dao.getAccountWithBalance(accountId).map { tuple ->
+            tuple?.toDomainModel()
+        }
+    }
+
+    override suspend fun saveAccount(name: String, type: String, initialBalance: Double, statementDay: Int?, dueDay: Int?) {
         val account = Account(
             id = UUID.randomUUID().toString(),
             name = name,

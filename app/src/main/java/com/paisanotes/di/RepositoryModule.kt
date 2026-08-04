@@ -5,6 +5,7 @@ import com.paisanotes.data.repository.AuditLogRepositoryImpl
 import com.paisanotes.data.repository.AuthRepositoryImpl
 import com.paisanotes.data.repository.BudgetRepositoryImpl
 import com.paisanotes.data.repository.CategoryRepositoryImpl
+import com.paisanotes.data.repository.CreditCardBillRepositoryImpl
 import com.paisanotes.data.repository.EmiRepositoryImpl
 import com.paisanotes.data.repository.LoanRepositoryImpl
 import com.paisanotes.data.repository.PersonRepositoryImpl
@@ -15,6 +16,7 @@ import com.paisanotes.domain.repository.AuditLogRepository
 import com.paisanotes.domain.repository.AuthRepository
 import com.paisanotes.domain.repository.BudgetRepository
 import com.paisanotes.domain.repository.CategoryRepository
+import com.paisanotes.domain.repository.CreditCardBillRepository
 import com.paisanotes.domain.repository.EmiRepository
 import com.paisanotes.domain.repository.LoanRepository
 import com.paisanotes.domain.repository.PersonRepository
@@ -68,4 +70,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindAccountRepository(impl: AccountRepositoryImpl): AccountRepository
+
+    @Binds
+    abstract fun bindCCRepository(impl: CreditCardBillRepositoryImpl): CreditCardBillRepository
 }

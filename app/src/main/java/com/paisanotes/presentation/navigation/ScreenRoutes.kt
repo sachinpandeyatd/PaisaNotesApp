@@ -56,6 +56,9 @@ data object AccountsRoute
 @Serializable
 data object MyEmisRoute
 
+@Serializable
+data class AccountDetailRoute(val accountId: String)
+
 // --- NEW: Bottom Navigation Helper ---
 data class TopLevelRoute<T : Any>(
     val name: String,

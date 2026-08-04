@@ -44,6 +44,14 @@ interface TransactionDao {
     fun getRecentTransactions(limit: Int): Flow<List<TransactionEntity>>
 
     @Query("""
+        SELECT * FROM transactions 
+        WHERE (accountId = :accountId OR transferAccountId = :accountId) 
+        AND isDeleted = 0 
+        ORDER BY transactionDate DESC
+    """)
+    fun getTransactionsForAccount(accountId: String): Flow<List<TransactionEntity>>
+
+    @Query("""
         SELECT COUNT(*) FROM transactions 
         WHERE amount = :amount 
         AND transactionType = :type 

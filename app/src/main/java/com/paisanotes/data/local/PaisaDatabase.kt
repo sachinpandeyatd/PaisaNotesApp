@@ -6,6 +6,7 @@ import com.paisanotes.data.local.dao.AccountDao
 import com.paisanotes.data.local.dao.AuditLogDao
 import com.paisanotes.data.local.dao.BudgetDao
 import com.paisanotes.data.local.dao.CategoryDao
+import com.paisanotes.data.local.dao.CreditCardBillDao
 import com.paisanotes.data.local.dao.EmiDao
 import com.paisanotes.data.local.dao.LoanDao
 import com.paisanotes.data.local.dao.PersonDao
@@ -14,6 +15,7 @@ import com.paisanotes.data.local.entity.AccountEntity
 import com.paisanotes.data.local.entity.AuditLogEntity
 import com.paisanotes.data.local.entity.BudgetEntity
 import com.paisanotes.data.local.entity.CategoryEntity
+import com.paisanotes.data.local.entity.CreditCardBillEntity
 import com.paisanotes.data.local.entity.EmiEntity
 import com.paisanotes.data.local.entity.LoanEntity
 import com.paisanotes.data.local.entity.PersonEntity
@@ -28,9 +30,10 @@ import com.paisanotes.data.local.entity.TransactionEntity
         AuditLogEntity::class,
         CategoryEntity::class,
         BudgetEntity::class,
-        AccountEntity::class
+        AccountEntity::class,
+        CreditCardBillEntity::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 abstract class PaisaDatabase : RoomDatabase() {
@@ -42,4 +45,5 @@ abstract class PaisaDatabase : RoomDatabase() {
     abstract val categoryDao: CategoryDao
     abstract val budgetDao: BudgetDao
     abstract val accountDao: AccountDao
+    abstract val creditCardBillDao: CreditCardBillDao
 }

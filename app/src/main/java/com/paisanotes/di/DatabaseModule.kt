@@ -7,6 +7,7 @@ import com.paisanotes.data.local.dao.AccountDao
 import com.paisanotes.data.local.dao.AuditLogDao
 import com.paisanotes.data.local.dao.BudgetDao
 import com.paisanotes.data.local.dao.CategoryDao
+import com.paisanotes.data.local.dao.CreditCardBillDao
 import com.paisanotes.data.local.dao.EmiDao
 import com.paisanotes.data.local.dao.LoanDao
 import com.paisanotes.data.local.dao.PersonDao
@@ -65,4 +66,8 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideAccountDao(db: PaisaDatabase): AccountDao = db.accountDao
+
+    @Provides
+    @Singleton
+    fun provideCCBillDao(db: PaisaDatabase): CreditCardBillDao = db.creditCardBillDao
 }

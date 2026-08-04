@@ -5,5 +5,7 @@ data class Account(
     val name: String,
     val type: String, // CASH, SAVINGS, CREDIT_CARD, WALLET
     val initialBalance: Double,
-    val currentBalance: Double = 0.0 // We will calculate this dynamically!
+    val currentBalance: Double = 0.0, // We will calculate this dynamically!
+    val statementDay: Int? = null,
+    val dueDay: Int? = null
 )
