@@ -36,8 +36,16 @@ class NotificationParser @Inject constructor() {
         if (packageName !in validPackages) return null
 
         val fullText = "$title $text".lowercase()
-        val isFinancial = listOf("rs", "inr", "₹", "debited", "credited", "spent", "paid", "received", "a/c", "acct").any { fullText.contains(it) }
 
+        // If the SMS is just a statement, a bill reminder, or an OTP, completely ignore it!
+        val ignoreKeywords = listOf("statement", "minimum due", "total amount due", "due by", "otp", "is generated")
+        if (ignoreKeywords.any { fullText.contains(it) }) {
+            android.util.Log.d("PaisaParser", "Ignored statement/reminder SMS: $text")
+            return null
+        }
+
+        // 2. Financial check
+        val isFinancial = listOf("rs", "inr", "₹", "debited", "credited", "spent", "paid", "received", "a/c", "acct").any { fullText.contains(it) }
         if (!isFinancial) return null
 
         try {
