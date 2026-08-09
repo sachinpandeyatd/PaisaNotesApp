@@ -20,4 +20,6 @@ interface TransactionRepository {
     suspend fun hasRecentDuplicate(amount: Double, type: String, notes: String, timeWindowMs: Long): Boolean
 
     fun getTransactionsForAccount(accountId: String): Flow<List<Transaction>>
+
+    fun getRecentAutoCapturedTransactions(): Flow<List<Transaction>>
 }

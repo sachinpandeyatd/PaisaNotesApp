@@ -50,6 +50,7 @@ fun MyEmisScreen(
             } else {
                 EmisList(
                     emis = state.emis,
+                    recentAutoCaptures = state.recentAutoCaptures,
                     onRecordEmiPayment = viewModel::recordEmiPayment,
                     onEditEmi = { emiId -> onNavigateToAddEmi(emiId) },
                     getEmiHistory = viewModel::getEmiHistory,

@@ -58,7 +58,7 @@ class LoanRepositoryImpl @Inject constructor(
         triggerBackgroundSync()
     }
 
-    override suspend fun saveLoan(loan: Loan) {
+    override suspend fun saveLoan(loan: Loan, linkedTxnId: String?) {
         val existingEntity = dao.getLoanById(loan.id)
         val actionType = if (existingEntity == null) "CREATE" else "UPDATE"
 
@@ -75,35 +75,37 @@ class LoanRepositoryImpl @Inject constructor(
 
         if (existingEntity == null) {
             val txnType = if (loan.type == "LENT") "EXPENSE" else "INCOME"
-            val categoryText =
-                if (loan.type == "LENT") "Given to Friend" else "Received from Friend"
-            val txnId = java.util.UUID.randomUUID().toString()
+            val categoryText = if (loan.type == "LENT") "Given to Friend" else "Received from Friend"
 
-            transactionDao.insertTransaction(
-                com.paisanotes.data.local.entity.TransactionEntity(
-                    id = txnId,
-                    amount = loan.amountLent,
-                    transactionType = txnType,
-                    merchant = null,
-                    category = categoryText,
-                    categoryId = null,
-                    transactionDate = loan.dateGiven,
-                    paymentMethod = "CASH",
-                    source = "FRIEND_LEDGER",
-                    notes = loan.notes,
-                    createdAt = System.currentTimeMillis(),
-                    updatedAt = System.currentTimeMillis(),
-                    syncStatus = SyncStatus.PENDING_INSERT
+            if (linkedTxnId != null) {
+                // REASSIGNMENT LOGIC: Hijack the auto-captured transaction!
+                val existingTxn = transactionDao.getTransactionById(linkedTxnId)
+                if (existingTxn != null) {
+                    transactionDao.updateTransaction(
+                        existingTxn.copy(
+                            transactionType = txnType, // Ensure it aligns perfectly
+                            category = categoryText,
+                            source = "FRIEND_LEDGER",
+                            notes = loan.notes ?: existingTxn.notes,
+                            updatedAt = System.currentTimeMillis(),
+                            syncStatus = SyncStatus.PENDING_UPDATE
+                        )
+                    )
+                }
+            } else {
+                // CREATE NEW TRANSACTION
+                val txnId = UUID.randomUUID().toString()
+                transactionDao.insertTransaction(
+                    TransactionEntity(
+                        id = txnId, amount = loan.amountLent, transactionType = txnType, merchant = null,
+                        category = categoryText, categoryId = null, accountId = null, transferAccountId = null,
+                        transactionDate = loan.dateGiven, paymentMethod = "CASH", source = "FRIEND_LEDGER", notes = loan.notes,
+                        createdAt = System.currentTimeMillis(), updatedAt = System.currentTimeMillis(),
+                        syncStatus = SyncStatus.PENDING_INSERT
+                    )
                 )
-            )
-            auditLogDao.insertLog(
-                AuditLogEntity(
-                    entityType = "TRANSACTION",
-                    entityId = txnId,
-                    actionType = "CREATE",
-                    metadata = """{"amount": ${loan.amountLent}}"""
-                )
-            )
+                auditLogDao.insertLog(AuditLogEntity(entityType = "TRANSACTION", entityId = txnId, actionType = "CREATE", metadata = """{"amount": ${loan.amountLent}}"""))
+            }
         }
 
         val metadataJson = """{"amount": ${loan.amountLent}, "type": "${loan.type}"}"""
@@ -111,7 +113,7 @@ class LoanRepositoryImpl @Inject constructor(
         auditLogDao.insertLog(AuditLogEntity(
             entityType = "LOAN",
             entityId = loan.id,
-            actionType = "CREATE",
+            actionType = actionType,
             metadata = metadataJson)
         )
 

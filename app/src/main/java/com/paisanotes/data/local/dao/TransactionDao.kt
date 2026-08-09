@@ -61,4 +61,8 @@ interface TransactionDao {
         AND isDeleted = 0
     """)
     suspend fun getDuplicateCount(amount: Double, type: String, currentNotes: String, timeThreshold: Long): Int
+
+    // Fetch recent notifications so we can reassign them!
+    @Query("SELECT * FROM transactions WHERE source = 'NOTIFICATION' AND isDeleted = 0 ORDER BY transactionDate DESC LIMIT 10")
+    fun getRecentAutoCapturedTransactions(): kotlinx.coroutines.flow.Flow<List<TransactionEntity>>
 }

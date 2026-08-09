@@ -6,7 +6,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.paisanotes.domain.model.Loan
+import com.paisanotes.domain.model.Transaction
 import com.paisanotes.domain.repository.LoanRepository
+import com.paisanotes.domain.repository.TransactionRepository
 import com.paisanotes.presentation.navigation.AddLoanRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,13 +25,17 @@ data class AddLoanState(
     val notes: String = "",
     val isEditing: Boolean = false,
     val isSaving: Boolean = false,
-    val saveSuccess: Boolean = false
+    val saveSuccess: Boolean = false,
+    val recentAutoCaptures: List<Transaction> = emptyList(),
+    val linkedTxnId: String? = null,
+    val linkedTxnName: String = "None (Create New)"
 )
 
 @HiltViewModel
 class AddLoanViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle, // Automatically grabs personId from NavHost!
-    private val repository: LoanRepository
+    private val repository: LoanRepository,
+    private val transactionRepository: TransactionRepository
 ) : ViewModel() {
 
     private val route = savedStateHandle.toRoute<AddLoanRoute>()
@@ -40,6 +46,11 @@ class AddLoanViewModel @Inject constructor(
     val state: StateFlow<AddLoanState> = _state.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            transactionRepository.getRecentAutoCapturedTransactions().collect { list ->
+                _state.update { it.copy(recentAutoCaptures = list) }
+            }
+        }
         if (loanId != null) {
             viewModelScope.launch {
                 val existingLoan = repository.getLoanById(loanId)
@@ -60,6 +71,16 @@ class AddLoanViewModel @Inject constructor(
     fun onAmountChange(value: String) { _state.update { it.copy(amount = value) } }
     fun onNotesChange(value: String) { _state.update { it.copy(notes = value) } }
     fun onTypeChange(type: String) { _state.update { it.copy(type = type) } }
+
+    fun onLinkedTxnSelect(id: String?, name: String, amount: Double?) {
+        _state.update {
+            it.copy(
+                linkedTxnId = id,
+                linkedTxnName = name,
+                amount = amount?.toString() ?: it.amount // Auto-fill the amount!
+            )
+        }
+    }
 
     fun saveLoan() {
         val parsedAmount = _state.value.amount.toDoubleOrNull()
@@ -90,7 +111,7 @@ class AddLoanViewModel @Inject constructor(
                 notes = _state.value.notes
             )
 
-            repository.saveLoan(loan)
+            repository.saveLoan(loan, _state.value.linkedTxnId)
             _state.update { it.copy(isSaving = false, saveSuccess = true) }
         }
     }

@@ -8,10 +8,12 @@ import com.paisanotes.domain.model.AuditLog
 import com.paisanotes.domain.model.Emi
 import com.paisanotes.domain.model.Loan
 import com.paisanotes.domain.model.Person
+import com.paisanotes.domain.model.Transaction
 import com.paisanotes.domain.repository.AuditLogRepository
 import com.paisanotes.domain.repository.EmiRepository
 import com.paisanotes.domain.repository.LoanRepository
 import com.paisanotes.domain.repository.PersonRepository
+import com.paisanotes.domain.repository.TransactionRepository
 import com.paisanotes.presentation.navigation.PersonDetailRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
@@ -30,6 +32,7 @@ data class PersonDetailState(
     val proxyEmis: List<Emi> = emptyList(),
     val totalExposure: Double = 0.0,
     val isLoading: Boolean = true,
+    val recentAutoCaptures: List<Transaction> = emptyList(),
 
     val showEditDialog: Boolean = false,
     val editName: String = "",
@@ -44,7 +47,8 @@ class PersonDetailViewModel @Inject constructor(
     private val personRepository: PersonRepository,
     private val loanRepository: LoanRepository,
     private val emiRepository: EmiRepository,
-    private val auditLogRepository: AuditLogRepository
+    private val auditLogRepository: AuditLogRepository,
+    private val transactionRepository: TransactionRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(PersonDetailState())
@@ -67,8 +71,9 @@ class PersonDetailViewModel @Inject constructor(
             combine(
                 personRepository.getAllPeople(),
                 loanRepository.getLoansForPerson(personId),
-                emiRepository.getEmisForPerson(personId)
-            ) { people, loans, emis ->
+                emiRepository.getEmisForPerson(personId),
+                transactionRepository.getRecentAutoCapturedTransactions()
+            ) { people, loans, emis, autoCaptures ->
 
                 // 1. Find our person from the list
                 val person = people.find { it.id == personId }
@@ -81,7 +86,8 @@ class PersonDetailViewModel @Inject constructor(
                     loans = loans,
                     proxyEmis = emis,
                     totalExposure = totalExposure, // Using the DB's math!
-                    isLoading = false
+                    isLoading = false,
+                    recentAutoCaptures = autoCaptures
                 )
             }.collectLatest { combinedState ->
                 _state.value = combinedState
@@ -92,14 +98,13 @@ class PersonDetailViewModel @Inject constructor(
     fun recordLoanRepayment(loanId: String, amount: Double) {
         viewModelScope.launch { loanRepository.recordRepayment(loanId, amount) }
     }
-    fun recordEmiPayment(emiId: String, amount: Double, monthName: String) {
+    fun recordEmiPayment(emiId: String, amount: Double, monthName: String, linkedTxnId: String?) {
         viewModelScope.launch {
-            emiRepository.recordEmiPayment(emiId, amount, monthName)
+            emiRepository.recordEmiPayment(emiId, amount, monthName, linkedTxnId)
         }
     }
 
     // --- EDIT PERSON LOGIC ---
-
     fun openEditDialog() {
         val p = _state.value.person ?: return
         _state.update { it.copy(showEditDialog = true, editName = p.name, editPhone = p.phoneNumber ?: "") }

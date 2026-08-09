@@ -136,4 +136,8 @@ class TransactionRepositoryImpl @Inject constructor(
             entities.map { it.toDomainModel() }
         }
     }
+
+    override fun getRecentAutoCapturedTransactions(): Flow<List<Transaction>> {
+        return dao.getRecentAutoCapturedTransactions().map { list -> list.map { it.toDomainModel() } }
+    }
 }

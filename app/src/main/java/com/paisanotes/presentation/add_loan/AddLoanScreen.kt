@@ -11,6 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,6 +79,43 @@ fun AddLoanScreen(
                 label = { Text("Notes (e.g., 'For dinner')") },
                 modifier = Modifier.fillMaxWidth()
             )
+
+            if (!state.isEditing) {
+                var expandedTxn by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(expanded = expandedTxn, onExpandedChange = { expandedTxn = it }) {
+                    OutlinedTextField(
+                        value = state.linkedTxnName,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Link to Auto-Captured Payment") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expandedTxn) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(expanded = expandedTxn, onDismissRequest = { expandedTxn = false }) {
+                        DropdownMenuItem(text = { Text("None (Create New)") }, onClick = {
+                            viewModel.onLinkedTxnSelect(null, "None (Create New)", null)
+                            expandedTxn = false
+                        })
+
+                        // Smart filtering: If you lent money, find recent expenses. If you borrowed, find incomes!
+                        val targetType = if (state.type == "LENT") "EXPENSE" else "INCOME"
+
+                        state.recentAutoCaptures.filter { it.transactionType == targetType }.forEach { txn ->
+                            val dateStr = SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault()).format(
+                                Date(txn.transactionDate)
+                            )
+                            DropdownMenuItem(
+                                text = { Text("₹${txn.amount} - $dateStr") },
+                                onClick = {
+                                    viewModel.onLinkedTxnSelect(txn.id, "₹${txn.amount}", txn.amount)
+                                    expandedTxn = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.weight(1f))
             Button(
                 onClick = viewModel::saveLoan,

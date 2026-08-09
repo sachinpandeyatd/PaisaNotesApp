@@ -42,6 +42,7 @@ import java.util.Locale
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.text.input.KeyboardType
 import com.paisanotes.domain.model.AuditLog
+import com.paisanotes.domain.model.Transaction
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 import java.time.YearMonth
@@ -158,6 +159,7 @@ fun PersonDetailScreen(
                     )
                     1 -> EmisList(
                         emis = state.proxyEmis,
+                        recentAutoCaptures = state.recentAutoCaptures,
                         onRecordEmiPayment = viewModel::recordEmiPayment,
                         onEditEmi = { emiId ->
                             state.person?.id?.let { personId ->
@@ -165,7 +167,7 @@ fun PersonDetailScreen(
                             }
                         },
                         getEmiHistory = viewModel::getEmiHistory,
-                        onEditEmiPayment = viewModel::editEmiPayment
+                        onEditEmiPayment = viewModel::editEmiPayment,
                     )
                 }
             }
@@ -343,7 +345,8 @@ fun LoansList(loans: List<Loan>, onEditLoan: (String) -> Unit) {
 @Composable
 fun EmisList(
     emis: List<Emi>,
-    onRecordEmiPayment: (String, Double, String) -> Unit,
+    recentAutoCaptures: List<Transaction>,
+    onRecordEmiPayment: (String, Double, String, String?) -> Unit,
     onEditEmi: (String) -> Unit,
     getEmiHistory: (String) -> Flow<List<AuditLog>>,
     onEditEmiPayment: (String, String, String?, Double, Double, String) -> Unit
@@ -444,6 +447,9 @@ fun EmisList(
     }
 
     val dialogEmi = selectedEmi ?: emis.find { it.id == logToEdit?.entityId }
+    var linkedTxnId by remember { mutableStateOf<String?>(null) }
+    var linkedTxnName by remember { mutableStateOf("None (Create New)") }
+    var expandedTxn by remember { mutableStateOf(false) }
     if (dialogEmi != null && (selectedEmi != null || logToEdit != null)) {
         AlertDialog(
             onDismissRequest = { selectedEmi = null; logToEdit = null },
@@ -460,7 +466,7 @@ fun EmisList(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // 🚨 THE NEW MONTH DROPDOWN
+                    // THE NEW MONTH DROPDOWN
                     var expandedMonth by remember { mutableStateOf(false) }
                     ExposedDropdownMenuBox(
                         expanded = expandedMonth,
@@ -483,6 +489,30 @@ fun EmisList(
                             }
                         }
                     }
+                    ExposedDropdownMenuBox(expanded = expandedTxn, onExpandedChange = { expandedTxn = it }) {
+                        OutlinedTextField(
+                            value = linkedTxnName, onValueChange = {}, readOnly = true,
+                            label = { Text("Link to Auto-Captured Payment") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expandedTxn) },
+                            modifier = Modifier.menuAnchor().fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(expanded = expandedTxn, onDismissRequest = { expandedTxn = false }) {
+                            // Option to NOT link anything
+                            DropdownMenuItem(text = { Text("None (Create New)") }, onClick = {
+                                linkedTxnId = null; linkedTxnName = "None (Create New)"; expandedTxn = false
+                            })
+
+                            // Show recent auto-captured transactions
+                            recentAutoCaptures.filter { it.transactionType == "INCOME" }.forEach { txn ->
+                                DropdownMenuItem(
+                                    text = { Text("₹${txn.amount} - ${SimpleDateFormat("dd MMM", Locale.getDefault()).format(Date(txn.transactionDate))}") },
+                                    onClick = {
+                                        linkedTxnId = txn.id; linkedTxnName = "₹${txn.amount}"; paymentAmount = txn.amount.toString(); expandedTxn = false
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             },
             confirmButton = {
@@ -497,7 +527,7 @@ fun EmisList(
                             logToEdit = null
                         } else {
                             // WE ARE ADDING NEW
-                            onRecordEmiPayment(dialogEmi.id, amt, selectedMonth)
+                            onRecordEmiPayment(dialogEmi.id, amt, selectedMonth, linkedTxnId)
                             selectedEmi = null
                         }
                     }

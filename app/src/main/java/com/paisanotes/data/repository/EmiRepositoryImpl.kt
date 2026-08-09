@@ -63,7 +63,7 @@ class EmiRepositoryImpl @Inject constructor(
         triggerBackgroundSync()
     }
 
-    override suspend fun recordEmiPayment(emiId: String, amount: Double, monthName: String) {
+    override suspend fun recordEmiPayment(emiId: String, amount: Double, monthName: String, linkedTxnId: String?) {
         val entity = dao.getEmiById(emiId) ?: return
 
         val newCompleted = entity.completedMonths + 1
@@ -81,29 +81,34 @@ class EmiRepositoryImpl @Inject constructor(
         ))
 
         // DYNAMIC LEDGER ENTRY
-        val txnType = if (entity.ownerType == "ME") "EXPENSE" else "INCOME"
         val refText = if (!entity.refNumber.isNullOrBlank()) " (Ref: ${entity.refNumber})" else ""
-        val txnId = UUID.randomUUID().toString()
 
-        transactionDao.insertTransaction(
-            TransactionEntity(
-                id = txnId,
-                amount = amount,
-                transactionType = txnType,
-                merchant = null,
-                category = "EMI Repayment",
-                categoryId = null,
-                accountId = null,
-                transferAccountId = null,
-                transactionDate = System.currentTimeMillis(),
-                paymentMethod = "UPI",
-                source = "EMI_AUTO",
-                notes = "EMI: $monthName$refText",
-                createdAt = System.currentTimeMillis(),
-                updatedAt = System.currentTimeMillis(),
-                syncStatus = SyncStatus.PENDING_INSERT
+        // REASSIGNMENT LOGIC
+        val txnType = if (entity.ownerType == "ME") "EXPENSE" else "INCOME"
+        val txnId = UUID.randomUUID().toString()
+        if (linkedTxnId != null) {
+            val existingTxn = transactionDao.getTransactionById(linkedTxnId)
+            if (existingTxn != null) {
+                // Consume the auto-captured transaction!
+                transactionDao.updateTransaction(existingTxn.copy(
+                    category = "EMI Repayment",
+                    source = "EMI_AUTO",
+                    notes = "EMI: $monthName$refText",
+                    updatedAt = System.currentTimeMillis(),
+                    syncStatus = SyncStatus.PENDING_UPDATE
+                ))
+            }
+        } else {
+            transactionDao.insertTransaction(
+                TransactionEntity(
+                    id = txnId, amount = amount, transactionType = txnType, merchant = null,
+                    category = "EMI Repayment", categoryId = null, accountId = null, transferAccountId = null,
+                    transactionDate = System.currentTimeMillis(), paymentMethod = "UPI", source = "EMI_AUTO",
+                    notes = "EMI: $monthName$refText", updatedAt = System.currentTimeMillis(),
+                    createdAt = System.currentTimeMillis(), syncStatus = SyncStatus.PENDING_INSERT
+                )
             )
-        )
+        }
 
         // AUDIT LOGS
         val logId = UUID.randomUUID().toString()

@@ -13,28 +13,39 @@ import javax.inject.Inject
 
 data class MyEmisState(
     val emis: List<Emi> = emptyList(),
+    val recentAutoCaptures: List<com.paisanotes.domain.model.Transaction> = emptyList(),
     val isLoading: Boolean = true
 )
 
 @HiltViewModel
 class MyEmisViewModel @Inject constructor(
     private val emiRepository: EmiRepository,
-    private val auditLogRepository: AuditLogRepository
+    private val auditLogRepository: AuditLogRepository,
+    private val transactionRepository: com.paisanotes.domain.repository.TransactionRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(MyEmisState())
     val state: StateFlow<MyEmisState> = _state.asStateFlow()
 
     init {
         viewModelScope.launch {
-            emiRepository.getMyEmis().collect { list ->
-                _state.update { it.copy(emis = list, isLoading = false) }
+            combine(
+                emiRepository.getMyEmis(),
+                transactionRepository.getRecentAutoCapturedTransactions()
+            ) { emisList, autoCaptures ->
+                MyEmisState(
+                    emis = emisList,
+                    recentAutoCaptures = autoCaptures,
+                    isLoading = false
+                )
+            }.collectLatest { combinedState ->
+                _state.value = combinedState
             }
         }
     }
 
-    fun recordEmiPayment(emiId: String, amount: Double, monthName: String) {
+    fun recordEmiPayment(emiId: String, amount: Double, monthName: String, linkedTxnId:String?) {
         viewModelScope.launch {
-            emiRepository.recordEmiPayment(emiId, amount, monthName)
+            emiRepository.recordEmiPayment(emiId, amount, monthName, linkedTxnId)
         }
     }
 
