@@ -38,7 +38,11 @@ class NotificationParser @Inject constructor() {
         val fullText = "$title $text".lowercase()
 
         // If the SMS is just a statement, a bill reminder, or an OTP, completely ignore it!
-        val ignoreKeywords = listOf("statement", "minimum due", "total amount due", "due by", "otp", "is generated")
+        val ignoreKeywords = listOf(
+            "statement", "minimum due", "total amount due", "due by", "otp", "is generated",
+            "reminder", "will be deducted", "will be debited", "scheduled", "upcoming", "requested"
+        )
+
         if (ignoreKeywords.any { fullText.contains(it) }) {
             android.util.Log.d("PaisaParser", "Ignored statement/reminder SMS: $text")
             return null
