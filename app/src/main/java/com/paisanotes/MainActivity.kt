@@ -8,12 +8,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -46,7 +48,7 @@ class MainActivity : ComponentActivity() {
         val quickAction = intent.getStringExtra("QUICK_ACTION")
 
         val startScreen = if (tokenManager.getToken() != null) {
-            // 🚨 Check if the widget told us to open a specific screen!
+            // Check if the widget told us to open a specific screen!
             when (quickAction) {
                 "TRANSACTION" -> AddTransactionRoute(null)
                 "LOAN" -> PeopleRoute // (Or AddLoanRoute if you want to pass a default person)
@@ -62,37 +64,41 @@ class MainActivity : ComponentActivity() {
                 Surface {
 
                     // --- Local Network permission gate (Android 17 / SDK 37+) ---
-                    var permissionGranted by remember {
+                    val requiredPermissions = mutableListOf<String>()
+                    if (Build.VERSION.SDK_INT >= 36) requiredPermissions.add(Manifest.permission.ACCESS_LOCAL_NETWORK)
+                    if (Build.VERSION.SDK_INT >= 33) requiredPermissions.add(Manifest.permission.POST_NOTIFICATIONS)
+
+                    var permissionsGranted by remember {
                         mutableStateOf(
-                            if (Build.VERSION.SDK_INT >= 36) {
-                                ContextCompat.checkSelfPermission(
-                                    this, Manifest.permission.ACCESS_LOCAL_NETWORK
-                                ) == PackageManager.PERMISSION_GRANTED
-                            } else true // permission doesn't exist below API 36
+                            requiredPermissions.all {
+                                ContextCompat.checkSelfPermission(this@MainActivity, it) == PackageManager.PERMISSION_GRANTED
+                            }
                         )
                     }
 
+                    // Upgraded to MultiplePermissions
                     val launcher = rememberLauncherForActivityResult(
-                        ActivityResultContracts.RequestPermission()
-                    ) { granted -> permissionGranted = granted }
+                        ActivityResultContracts.RequestMultiplePermissions()
+                    ) { permissionsMap ->
+                        permissionsGranted = permissionsMap.values.all { it }
+                    }
 
                     LaunchedEffect(Unit) {
-                        if (Build.VERSION.SDK_INT >= 36 && !permissionGranted) {
-                            launcher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
+                        if (requiredPermissions.isNotEmpty() && !permissionsGranted) {
+                            launcher.launch(requiredPermissions.toTypedArray())
                         }
                     }
 
-                    if (!permissionGranted && Build.VERSION.SDK_INT >= 36) {
-                        // Simple blocking screen until granted — replace with your own rationale UI
+                    if (!permissionsGranted && requiredPermissions.isNotEmpty()) {
                         Column(
-                            modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-                            verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            Text("PaisaNotes needs local network access to sync with your server.")
-                            Spacer(modifier = androidx.compose.ui.Modifier.height(16.dp))
-                            Button(onClick = { launcher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK) }) {
-                                Text("Grant permission")
+                            Text("PaisaNotes needs Network and Notification permissions to sync and alert you.")
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(onClick = { launcher.launch(requiredPermissions.toTypedArray()) }) {
+                                Text("Grant permissions")
                             }
                         }
                     } else {

@@ -1,9 +1,17 @@
 package com.paisanotes.service
 
 import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import androidx.core.app.NotificationCompat
+import com.paisanotes.MainActivity
 import com.paisanotes.domain.model.Transaction
 import com.paisanotes.domain.parser.NotificationParser
 import com.paisanotes.domain.repository.AccountRepository
@@ -97,11 +105,45 @@ class PaisaNotificationListener : NotificationListenerService() {
                 )
 
                 repository.saveTransaction(transaction)
+
+                showSuccessAlert(parsedData.amount, parsedData.type, parsedData.accountName)
             }
         }
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
         // We don't care when they swipe the notification away
+    }
+
+    private fun showSuccessAlert(amount: Double, type: String, sourceApp: String) {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        // 1. Create the Notification Channel (Required for modern Android)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                "paisa_auto_capture",
+                "Auto-Capture Alerts",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        // 2. Create the Intent so clicking the notification opens the app!
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+
+        // 3. Build and fire the notification
+        val builder = NotificationCompat.Builder(this, "paisa_auto_capture")
+            .setSmallIcon(android.R.drawable.ic_menu_save) // A standard save icon
+            .setContentTitle("PaisaNotes: Auto-Captured $type")
+            .setContentText("Successfully auto-captured transaction of ₹$amount from $sourceApp")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+
+        // Use a random ID so multiple captures don't overwrite each other
+        notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
     }
 }
