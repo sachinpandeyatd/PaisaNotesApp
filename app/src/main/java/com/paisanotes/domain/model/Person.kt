@@ -4,5 +4,8 @@ data class Person(
     val id: String,
     val name: String,
     val phoneNumber: String?,
-    val totalExposure: Double = 0.0
-)
+    val loanExposure: Double = 0.0,
+    val emiExposure: Double = 0.0
+){
+    val combinedExposure: Double get() = loanExposure + emiExposure
+}

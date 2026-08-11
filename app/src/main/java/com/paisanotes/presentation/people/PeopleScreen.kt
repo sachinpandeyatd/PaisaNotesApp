@@ -138,19 +138,18 @@ fun PersonItemCard(person: Person, onClick: () -> Unit) {
             Column {
                 Text(text = person.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
 
-                // 🚨 DYNAMIC CALCULATION FORMATTING
+                // DYNAMIC CALCULATION FORMATTING
                 val formatter = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
-                val formattedExposure = formatter.format(person.totalExposure)
 
-                // If exposure is > 0, we highlight it in Red!
-                val exposureColor = if (person.totalExposure > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-
-                Text(
-                    text = "Total Exposure: $formattedExposure",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = exposureColor,
-                    fontWeight = if (person.totalExposure > 0) FontWeight.Bold else FontWeight.Normal
-                )
+                if (person.loanExposure != 0.0) {
+                    Text("Cash Pending: ${formatter.format(person.loanExposure)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                }
+                if (person.emiExposure != 0.0) {
+                    Text("Proxy EMIs: ${formatter.format(person.emiExposure)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                }
+                if (person.loanExposure == 0.0 && person.emiExposure == 0.0) {
+                    Text("Settled up", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                }
             }
         }
     }

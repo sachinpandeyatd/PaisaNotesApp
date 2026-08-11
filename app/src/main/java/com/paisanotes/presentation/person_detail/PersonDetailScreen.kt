@@ -114,10 +114,7 @@ fun PersonDetailScreen(
                 .padding(paddingValues)
         ) {
             // --- HEADER: TOTAL EXPOSURE ---
-            ExposureHeader(
-                totalExposure = state.totalExposure,
-                phone = state.person?.phoneNumber
-            )
+            ExposureHeader(person = state.person)
 
             // --- TABS ---
             TabRow(
@@ -255,19 +252,18 @@ fun PersonDetailScreen(
 }
 
 @Composable
-fun ExposureHeader(totalExposure: Double, phone: String?) {
+fun ExposureHeader(person: com.paisanotes.domain.model.Person?) {
     val formatter = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
+    val combinedExp = person?.combinedExposure ?: 0.0
+    val loanExp = person?.loanExposure ?: 0.0
+    val emiExp = person?.emiExposure ?: 0.0
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -281,15 +277,28 @@ fun ExposureHeader(totalExposure: Double, phone: String?) {
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text(text = "Total Exposure", style = MaterialTheme.typography.labelLarge)
+                Text(text = "Total Combined Exposure", style = MaterialTheme.typography.labelLarge)
+
+                // MAIN BIG NUMBER
                 Text(
-                    text = formatter.format(totalExposure),
+                    text = formatter.format(combinedExp),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.error // Red, because they owe you this money!
+                    color = if (combinedExp > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                if (!phone.isNullOrBlank()) {
-                    Text(text = phone, style = MaterialTheme.typography.bodySmall)
+
+                // THE BREAKDOWN (Only show if they have EMIs!)
+                if (emiExp > 0) {
+                    Text(
+                        text = "(Cash: ${formatter.format(loanExp)} | EMIs: ${formatter.format(emiExp)})",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+
+                if (!person?.phoneNumber.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = person!!.phoneNumber!!, style = MaterialTheme.typography.bodySmall)
                 }
             }
         }

@@ -39,7 +39,8 @@ fun PersonWithExposureTuple.toDomainModel(): Person {
         id = person.id,
         name = person.name,
         phoneNumber = person.phoneNumber,
-        totalExposure = totalExposure // Map the calculated SQL value!
+        loanExposure = loanExposure,
+        emiExposure = emiExposure
     )
 }
 
@@ -55,7 +56,7 @@ fun PersonEntity.toDto(): PersonDto {
     )
 }
 
-fun com.paisanotes.data.remote.dto.PersonDto.toEntity(): PersonEntity {
+fun PersonDto.toEntity(): PersonEntity {
     return PersonEntity(
         id = id,
         name = name,

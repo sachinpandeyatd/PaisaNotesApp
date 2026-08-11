@@ -79,7 +79,7 @@ class PersonDetailViewModel @Inject constructor(
                 val person = people.find { it.id == personId }
 
                 // The SQLite query we wrote in PersonDao already calculated this perfectly.
-                val totalExposure = person?.totalExposure ?: 0.0
+                val totalExposure = person?.combinedExposure ?: 0.0
 
                 PersonDetailState(
                     person = person,
@@ -131,11 +131,11 @@ class PersonDetailViewModel @Inject constructor(
     fun deletePerson() {
         val s = _state.value
 
-        if (s.totalExposure != 0.0) {
+        if (s.person?.loanExposure != 0.0 || s.person.emiExposure != 0.0) {
             _state.update {
-                it.copy(errorMessage = "Cannot delete a friend with an active balance. Total Exposure must be exactly ₹0.00.")
+                it.copy(errorMessage = "Cannot delete a friend with an active balance. Settle all loans and EMIs first.")
             }
-            return // Stop execution!
+            return
         }
 
         val personId = s.person?.id ?: return

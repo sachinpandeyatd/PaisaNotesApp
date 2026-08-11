@@ -32,16 +32,19 @@ interface PersonDao {
     // This query sums up all active loans and proxy EMIs for each person dynamically!
     @Query("""
         SELECT p.*, 
-               (
-                 COALESCE((SELECT SUM(
+               -- 1. Cash Loans (Affects Net Worth)
+               COALESCE((SELECT SUM(
                      CASE 
                         WHEN type = 'LENT' THEN amountLent 
                         ELSE -amountLent 
                      END
-                 ) FROM loans WHERE personId = p.id AND isDeleted = 0), 0.0) 
-                 +
-                 COALESCE((SELECT SUM(totalAmountWithInterest - amountPaid) FROM emis WHERE personId = p.id AND status = 'ACTIVE' AND isDeleted = 0), 0.0)
-               ) AS totalExposure
+                 ) FROM loans WHERE personId = p.id AND isDeleted = 0), 0.0) AS loanExposure,
+                 
+               -- 2. Proxy EMIs (Does NOT affect Net Worth)
+               COALESCE((SELECT SUM(totalAmountWithInterest - amountPaid) 
+                         FROM emis 
+                         WHERE personId = p.id AND status = 'ACTIVE' AND isDeleted = 0), 0.0) AS emiExposure
+                         
         FROM people p
         WHERE p.isDeleted = 0
         ORDER BY p.name ASC

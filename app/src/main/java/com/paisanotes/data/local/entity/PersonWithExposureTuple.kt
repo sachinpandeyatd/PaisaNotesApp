@@ -4,5 +4,6 @@ import androidx.room.Embedded
 
 data class PersonWithExposureTuple(
     @Embedded val person: PersonEntity,
-    val totalExposure: Double
+    val loanExposure: Double,
+    val emiExposure: Double
 )

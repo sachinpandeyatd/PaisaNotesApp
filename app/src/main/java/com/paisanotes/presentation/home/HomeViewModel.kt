@@ -16,7 +16,8 @@ import javax.inject.Inject
 data class HomeState(
     val thisMonthIncome: Double = 0.0,
     val thisMonthExpense: Double = 0.0,
-    val totalExposure: Double = 0.0,
+    val totalLoanExposure: Double = 0.0,
+    val totalEmiExposure: Double = 0.0,
     val totalNetWorth: Double = 0.0,
     val recentTransactions: List<Transaction> = emptyList(),
     val isLoading: Boolean = true
@@ -53,14 +54,20 @@ class HomeViewModel @Inject constructor(
             ) { income, expense, peopleList, recentTxns, accounts ->
                 
                 // Calculate how much money all friends combined owe you
-                val exposure = peopleList.sumOf { it.totalExposure }
-                val netWorth = accounts.sumOf { it.currentBalance }
+                val loanExp = peopleList.sumOf { it.loanExposure }
+                val emiExp = peopleList.sumOf { it.emiExposure }
+
+                val liquidCash = accounts.sumOf { it.currentBalance }
+
+                // True Net Worth = Cash in Bank + Cash Loans. (EMIs completely ignored!)
+                val trueNetWorth = liquidCash + loanExp
 
                 HomeState(
                     thisMonthIncome = income,
                     thisMonthExpense = expense,
-                    totalExposure = exposure,
-                    totalNetWorth = netWorth,
+                    totalLoanExposure = loanExp,
+                    totalEmiExposure = emiExp,
+                    totalNetWorth = trueNetWorth,
                     recentTransactions = recentTxns,
                     isLoading = false
                 )
