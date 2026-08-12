@@ -62,47 +62,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 Surface {
+                    // Wrap the entire app in our new PermissionsGate!
+                    com.paisanotes.presentation.onboarding.PermissionsGate {
 
-                    // --- Local Network permission gate (Android 17 / SDK 37+) ---
-                    val requiredPermissions = mutableListOf<String>()
-                    if (Build.VERSION.SDK_INT >= 36) requiredPermissions.add(Manifest.permission.ACCESS_LOCAL_NETWORK)
-                    if (Build.VERSION.SDK_INT >= 33) requiredPermissions.add(Manifest.permission.POST_NOTIFICATIONS)
-
-                    var permissionsGranted by remember {
-                        mutableStateOf(
-                            requiredPermissions.all {
-                                ContextCompat.checkSelfPermission(this@MainActivity, it) == PackageManager.PERMISSION_GRANTED
-                            }
-                        )
-                    }
-
-                    // Upgraded to MultiplePermissions
-                    val launcher = rememberLauncherForActivityResult(
-                        ActivityResultContracts.RequestMultiplePermissions()
-                    ) { permissionsMap ->
-                        permissionsGranted = permissionsMap.values.all { it }
-                    }
-
-                    LaunchedEffect(Unit) {
-                        if (requiredPermissions.isNotEmpty() && !permissionsGranted) {
-                            launcher.launch(requiredPermissions.toTypedArray())
-                        }
-                    }
-
-                    if (!permissionsGranted && requiredPermissions.isNotEmpty()) {
-                        Column(
-                            modifier = Modifier.fillMaxSize(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text("PaisaNotes needs Network and Notification permissions to sync and alert you.")
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(onClick = { launcher.launch(requiredPermissions.toTypedArray()) }) {
-                                Text("Grant permissions")
-                            }
-                        }
-                    } else {
+                        // If all permissions are granted, it renders the App!
                         MainScreen(startDestination = startScreen)
+
                     }
                 }
             }
