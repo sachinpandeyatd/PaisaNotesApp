@@ -9,6 +9,7 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+
     <application
         android:name=".PaisaNotesApp"
         android:allowBackup="false"
@@ -46,6 +47,13 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/quick_add_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".receiver.NotificationActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="ACTION_DELETE_TXN" />
+            </intent-filter>
         </receiver>
 
         <service

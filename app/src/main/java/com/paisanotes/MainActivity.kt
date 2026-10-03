@@ -46,9 +46,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val quickAction = intent.getStringExtra("QUICK_ACTION")
+        val intentAction = intent.action
+        val editTxnId = intent.getStringExtra("TXN_ID")
 
         val startScreen = if (tokenManager.getToken() != null) {
-            // Check if the widget told us to open a specific screen!
+            if (intentAction == "ACTION_EDIT_TXN" && editTxnId != null) {
+                AddTransactionRoute(transactionId = editTxnId)
+            }
             when (quickAction) {
                 "TRANSACTION" -> AddTransactionRoute(null)
                 "LOAN" -> PeopleRoute // (Or AddLoanRoute if you want to pass a default person)

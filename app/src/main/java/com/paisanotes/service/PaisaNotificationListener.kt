@@ -106,7 +106,7 @@ class PaisaNotificationListener : NotificationListenerService() {
 
                 repository.saveTransaction(transaction)
 
-                showSuccessAlert(parsedData.amount, parsedData.type, parsedData.accountName)
+                showSuccessAlert(parsedData.amount, parsedData.type, parsedData.accountName, transaction.id)
             }
         }
     }
@@ -115,10 +115,10 @@ class PaisaNotificationListener : NotificationListenerService() {
         // We don't care when they swipe the notification away
     }
 
-    private fun showSuccessAlert(amount: Double, type: String, sourceApp: String) {
+    private fun showSuccessAlert(amount: Double, type: String, sourceApp: String, transactionId: String) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationId = System.currentTimeMillis().toInt()
 
-        // 1. Create the Notification Channel (Required for modern Android)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 "paisa_auto_capture",
@@ -128,22 +128,39 @@ class PaisaNotificationListener : NotificationListenerService() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        // 2. Create the Intent so clicking the notification opens the app!
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
 
-        // 3. Build and fire the notification
-        val builder = NotificationCompat.Builder(this, "paisa_auto_capture")
-            .setSmallIcon(android.R.drawable.ic_menu_save) // A standard save icon
-            .setContentTitle("PaisaNotes: Auto-Captured $type")
-            .setContentText("Successfully auto-captured transaction of ₹$amount from $sourceApp")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
+        val editIntent = Intent(this, MainActivity::class.java).apply {
+            action = "ACTION_EDIT_TXN"
+            putExtra("TXN_ID", transactionId)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val editPendingIntent = PendingIntent.getActivity(
+            this, notificationId, editIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
 
-        // Use a random ID so multiple captures don't overwrite each other
-        notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
+        val deleteIntent = Intent(this, com.paisanotes.receiver.NotificationActionReceiver::class.java).apply {
+            action = "ACTION_DELETE_TXN"
+            putExtra("TXN_ID", transactionId)
+            putExtra("NOTIF_ID", notificationId)
+        }
+        val deletePendingIntent = PendingIntent.getBroadcast(
+            this, notificationId, deleteIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val builder = NotificationCompat.Builder(this, "paisa_auto_capture")
+            .setSmallIcon(android.R.drawable.ic_menu_save)
+            .setContentTitle("PaisaNotes: Auto-Captured $type")
+            .setContentText("Successfully logged ₹$amount from $sourceApp")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(editPendingIntent) // Tapping the notification itself also opens the editor
+            .setAutoCancel(true)
+            .addAction(android.R.drawable.ic_menu_edit, "Edit", editPendingIntent) // 🚨 ADD EDIT BUTTON
+            .addAction(android.R.drawable.ic_menu_delete, "Delete", deletePendingIntent) // 🚨 ADD DELETE BUTTON
+
+        notificationManager.notify(notificationId, builder.build())
     }
 }
